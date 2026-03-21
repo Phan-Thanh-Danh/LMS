@@ -5,8 +5,5 @@ using System.Threading.Tasks;
 
 namespace backend.Repository.Services
 {
-    public interface NewInterface
-    {
-        
-    }
+    public interface NewInterface { }
 }

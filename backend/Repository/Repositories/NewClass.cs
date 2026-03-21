@@ -5,8 +5,5 @@ using System.Threading.Tasks;
 
 namespace backend.Repository.Repositories
 {
-    public class NewClass
-    {
-        
-    }
+    public class NewClass { }
 }
