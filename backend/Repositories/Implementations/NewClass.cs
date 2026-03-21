@@ -3,10 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace backend.Repositories
+namespace backend.Repositories.Implementations
 {
-    public class NewClass
-    {
-        
-    }
+    public class NewClass { }
 }
