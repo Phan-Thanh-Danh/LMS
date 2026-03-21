@@ -5,8 +5,5 @@ using System.Threading.Tasks;
 
 namespace backend.Helpers
 {
-    public class NewClass
-    {
-        
-    }
+    public class NewClass { }
 }
