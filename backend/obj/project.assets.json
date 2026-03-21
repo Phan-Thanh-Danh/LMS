@@ -3148,6 +3148,7 @@
     "net10.0": [
       "Microsoft.AspNetCore.OpenApi >= 10.0.4",
       "Microsoft.EntityFrameworkCore >= 10.0.5",
+      "Microsoft.EntityFrameworkCore.Design >= 10.0.5",
       "Microsoft.EntityFrameworkCore.SqlServer >= 10.0.5",
       "Microsoft.EntityFrameworkCore.Tools >= 10.0.5"
     ]
@@ -3159,11 +3160,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\AET Academy\\LMS\\backend\\backend.csproj",
+      "projectUniqueName": "d:\\AET Academy\\LMS\\backend\\backend.csproj",
       "projectName": "backend",
-      "projectPath": "D:\\AET Academy\\LMS\\backend\\backend.csproj",
+      "projectPath": "d:\\AET Academy\\LMS\\backend\\backend.csproj",
       "packagesPath": "C:\\Users\\gigabyte\\.nuget\\packages\\",
-      "outputPath": "D:\\AET Academy\\LMS\\backend\\obj\\",
+      "outputPath": "d:\\AET Academy\\LMS\\backend\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -3208,6 +3209,12 @@
             "version": "[10.0.4, )"
           },
           "Microsoft.EntityFrameworkCore": {
+            "target": "Package",
+            "version": "[10.0.5, )"
+          },
+          "Microsoft.EntityFrameworkCore.Design": {
+            "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+            "suppressParent": "All",
             "target": "Package",
             "version": "[10.0.5, )"
           },

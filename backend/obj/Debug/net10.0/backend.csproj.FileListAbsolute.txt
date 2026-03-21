@@ -156,3 +156,5 @@ D:\AET Academy\LMS\backend\obj\Debug\net10.0\refint\backend.dll
 D:\AET Academy\LMS\backend\obj\Debug\net10.0\backend.pdb
 D:\AET Academy\LMS\backend\obj\Debug\net10.0\backend.genruntimeconfig.cache
 D:\AET Academy\LMS\backend\obj\Debug\net10.0\ref\backend.dll
+D:\AET Academy\LMS\backend\bin\Debug\net10.0\dotnet-tools.json
+D:\AET Academy\LMS\backend\obj\Debug\net10.0\backend.sourcelink.json
