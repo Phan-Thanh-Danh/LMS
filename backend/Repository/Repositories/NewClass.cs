@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace backend.Repositories.Interfaces
+namespace backend.Repository.Repositories
 {
-    public interface NewInterface { }
+    public class NewClass
+    {
+        
+    }
 }
