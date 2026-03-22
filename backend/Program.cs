@@ -12,6 +12,15 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString)
 );
 
+builder.Services.AddControllers();
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<backend.Repository.Services.IAuthService, backend.Repository.Repositories.AuthRepository>();
+
+// Configure Authentication (Basic setup for Register/Login logic)
+builder.Services.AddAuthentication();
+builder.Services.AddAuthorization();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -21,6 +30,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
 
 var summaries = new[]
 {

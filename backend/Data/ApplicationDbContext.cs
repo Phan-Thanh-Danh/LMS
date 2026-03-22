@@ -1,5 +1,5 @@
-using backend.Models;
 using System.Linq;
+using backend.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace backend.Data
@@ -76,13 +76,13 @@ namespace backend.Data
                 .Entity<TongHopDoanhThuNgay>()
                 .HasKey(th => new { th.NgayTongHop, th.MaKhoaHoc });
 
-            modelBuilder.Entity<LanDangNhap>()
-                .HasKey(ld => ld.MaLanLam);
+            modelBuilder.Entity<LanDangNhap>().HasKey(ld => ld.MaLanLam);
 
             modelBuilder.Seed();
 
             // Tắt Cascade Delete mặc định của EF Core để tránh lỗi "multiple cascade paths" trên SQL Server
-            var cascadeFKs = modelBuilder.Model.GetEntityTypes()
+            var cascadeFKs = modelBuilder
+                .Model.GetEntityTypes()
                 .SelectMany(t => t.GetForeignKeys())
                 .Where(fk => !fk.IsOwnership && fk.DeleteBehavior == DeleteBehavior.Cascade);
 
