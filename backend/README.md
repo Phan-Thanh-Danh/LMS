@@ -552,36 +552,105 @@ Các cột aggregate trên `KhoaHoc` phải được cập nhật đồng bộ k
 
 ## 8. Cấu Trúc Dự Án
 
+Stack: **ASP.NET Core (C#)** — kiến trúc phân lớp theo Repository Pattern.
+
 ```
-/
-├── src/
-│   ├── modules/
-│   │   ├── iam/                    # NguoiDung, VaiTro, MaOtp, PhienLamViec, NhatKyKiemToan
-│   │   ├── course/                 # KhoaHoc, Chuong, BaiGiang, BaiKiemTra, CauHoi, LuaChonDapAn
-│   │   ├── media/                  # TaiNguyenSo, MaHoaVideo
-│   │   ├── ecommerce/              # GioHang, DonHang, ChiTietDonHang, GhiDanh, HoanTien
-│   │   ├── learning/               # TienDoHocTap, LanLamBai, DapAnHocVien, ChungChi, GhiChu
-│   │   ├── engagement/             # DanhGia, ChuDeHoiDap, TraLoiHoiDap
-│   │   ├── marketing/              # ChienDich, MaGiamGia, TuongTacNguoiDung, ThongBaoKhoaHoc
-│   │   ├── finance/                # HoSoGiangVien, SoCaiKeToan, YeuCauRutTien, TongHopDoanhThuNgay
-│   │   ├── scheduling/             # LichHoc, DiemDanh, ChuoiHocLienTiep
-│   │   └── support/                # PhieuHoTro, PhanHoiPhieu
-│   ├── shared/
-│   │   ├── database/               # Connection pool, migrations, seeds
-│   │   ├── auth/                   # JWT middleware, RBAC guard
-│   │   ├── audit/                  # NhatKyKiemToan interceptor
-│   │   ├── storage/                # S3/Azure Blob adapter
-│   │   └── payment/                # Payment gateway adapter, webhook handler
-│   └── jobs/                       # Cron jobs: revenue aggregation, streak reset, reminder
-├── database/
-│   ├── migrations/
-│   ├── seeds/
-│   └── LMS_Database_VI.sql         # Schema gốc
-└── docs/
-    ├── DB_Design_LMS_v3_VI.docx
-    ├── DB_Relations_LMS_v3_VI.docx
-    └── LMS_dbdiagram.dbml
+backend/
+├── Controllers/                    # API Controllers — định tuyến HTTP, không chứa business logic
+│   ├── AuthController.cs           # Đăng ký, đăng nhập, OTP, refresh token
+│   ├── CourseController.cs         # CRUD khóa học, submit duyệt, publish
+│   ├── LectureController.cs        # Chuong, BaiGiang, BaiKiemTra
+│   ├── OrderController.cs          # GioHang, DonHang, thanh toán, webhook
+│   ├── EnrollmentController.cs     # GhiDanh, TienDoHocTap, ChungChi
+│   ├── MediaController.cs          # Upload TaiNguyenSo, stream HLS
+│   ├── FinanceController.cs        # SoCaiKeToan, YeuCauRutTien
+│   ├── EngagementController.cs     # DanhGia, ChuDeHoiDap, TraLoiHoiDap
+│   ├── MarketingController.cs      # ChienDich, MaGiamGia
+│   └── SupportController.cs        # PhieuHoTro, PhanHoiPhieu
+│
+├── Data/                           # EF Core DbContext & cấu hình entity
+│   ├── AppDbContext.cs             # DbContext trung tâm — đăng ký tất cả DbSet
+│   └── Configurations/             # IEntityTypeConfiguration per entity (Fluent API)
+│       ├── NguoiDungConfig.cs
+│       ├── KhoaHocConfig.cs
+│       └── ...
+│
+├── DTOs/                           # Data Transfer Objects — contract giữa API và client
+│   ├── Auth/
+│   │   ├── RegisterRequest.cs
+│   │   ├── LoginRequest.cs
+│   │   └── TokenResponse.cs
+│   ├── Course/
+│   │   ├── CourseCreateRequest.cs
+│   │   ├── CourseResponse.cs
+│   │   └── ...
+│   └── ...                         # Mỗi module có subfolder riêng
+│
+├── Helpers/                        # Utility tĩnh, không phụ thuộc DI
+│   ├── PasswordHelper.cs           # Bcrypt/Argon2 hash & verify
+│   ├── JwtHelper.cs                # Generate/validate JWT
+│   ├── SlugHelper.cs               # Tạo DuongDanURL từ tiêu đề
+│   ├── PaginationHelper.cs         # Offset/cursor pagination logic
+│   └── AuditHelper.cs              # Ghi NhatKyKiemToan
+│
+├── Middlewares/                    # ASP.NET Core middleware pipeline
+│   ├── AuthMiddleware.cs           # Validate JWT, inject ClaimsPrincipal
+│   ├── RbacMiddleware.cs           # Kiểm tra VaiTroNguoiDung theo route
+│   ├── AuditMiddleware.cs          # Intercept request/response ghi audit log
+│   └── ExceptionMiddleware.cs      # Global error handler — chuẩn hóa error response
+│
+├── Migrations/                     # EF Core migration files (auto-generated)
+│   └── ...
+│
+├── Models/                         # Entity classes — ánh xạ 1-1 với bảng DB
+│   ├── NguoiDung.cs
+│   ├── VaiTro.cs
+│   ├── KhoaHoc.cs
+│   ├── BaiGiang.cs
+│   ├── DonHang.cs
+│   ├── GhiDanh.cs
+│   └── ...                         # 46 entity classes tương ứng 46 bảng
+│
+├── Repository/                     # Repository Pattern — abstract hóa data access
+│   ├── Interfaces/
+│   │   ├── IRepository.cs          # Generic interface: GetById, GetAll, Add, Update, Delete
+│   │   ├── INguoiDungRepository.cs
+│   │   ├── IKhoaHocRepository.cs
+│   │   └── ...
+│   └── Implementations/
+│       ├── Repository.cs           # Generic implementation dùng EF Core
+│       ├── NguoiDungRepository.cs  # Override method đặc thù: FindByEmail, GetWithRoles...
+│       ├── KhoaHocRepository.cs    # GetPublished, GetByInstructor, GetWithProgress...
+│       └── ...
+│
+├── Properties/
+│   └── launchSettings.json
+│
+├── appsettings.json                # Cấu hình production: ConnectionString, JWT, Storage
+├── appsettings.Development.json    # Override cho môi trường dev
+├── Program.cs                      # Entry point — DI registration, middleware pipeline
+├── backend.csproj                  # Project file — NuGet dependencies
+├── backend.sln                     # Solution file
+├── backend.http                    # HTTP request file (test API thủ công)
+├── dotnet-tools.json               # Dotnet local tools (EF CLI, v.v.)
+└── README.md
 ```
+
+**Quy ước phân lớp:**
+
+| Lớp | Trách nhiệm | Không được phép |
+|-----|-------------|-----------------|
+| `Controllers` | Nhận request, validate input, trả response | Chứa SQL query, business logic phức tạp |
+| `Repository` | Truy vấn DB qua EF Core, soft delete filter | Gọi HTTP ngoài, xử lý auth |
+| `Helpers` | Utility thuần túy, stateless | Inject DbContext, gọi Repository |
+| `Middlewares` | Cross-cutting concerns (auth, audit, error) | Chứa domain logic cụ thể |
+| `Models` | Ánh xạ entity DB | Chứa business logic, validation attribute phức tạp |
+| `DTOs` | Contract API — input/output | Tham chiếu trực tiếp `Models` |
+
+**Lưu ý cho EF Core:**
+- `AppDbContext` phải có global query filter `WHERE DaXoa = 0` cho mọi entity có cột `DaXoa`.
+- Dùng `HasKey`, `HasIndex(x => x.Email).IsUnique()`, `HasOne/HasMany` trong `Configurations/` thay vì Data Annotations trên Model.
+- Migration phải có tên mô tả rõ: `AddKhoaHocTrangThaiIndex`, không dùng tên mặc định timestamp.
 
 ---
 
