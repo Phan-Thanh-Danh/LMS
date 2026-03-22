@@ -1,0 +1,642 @@
+// ============================================================
+//  HỆ THỐNG LMS - NỀN TẢNG HỌC TRỰC TUYẾN
+//  Format: DBML (dbdiagram.io)
+//  Phiên bản 1.0
+// ============================================================
+
+// ============================================================
+//  NHÓM 1: QUẢN TRỊ ĐỊNH DANH & PHÂN QUYỀN (IAM)
+// ============================================================
+
+Table NguoiDung [note: 'Lưu tài khoản tất cả người dùng (học viên, giảng viên, admin)'] {
+  MaNguoiDung         uniqueidentifier  [pk, default: `NEWSEQUENTIALID()`, note: 'Định danh duy nhất - GUID']
+  Email               nvarchar(255)     [not null, unique, note: 'Email đăng nhập, duy nhất toàn hệ thống']
+  MatKhauBam          nvarchar(512)     [not null, note: 'Mật khẩu băm Bcrypt/Argon2']
+  MuoiMatKhau         nvarchar(256)     [not null, note: 'Muối ngẫu nhiên kết hợp khi băm']
+  HoTen               nvarchar(200)     [not null, note: 'Họ và tên đầy đủ']
+  DuongDanAnhDaiDien  nvarchar(500)     [null, note: 'Đường dẫn ảnh đại diện']
+  TieuSu              nvarchar(max)     [null, note: 'Tiểu sử / giới thiệu bản thân']
+  DangHoatDong        bit               [not null, default: 1, note: '1=Hoạt động, 0=Bị khóa']
+  DaXoa               bit               [not null, default: 0, note: 'Cờ xóa mềm (Soft Delete)']
+  EmailDaXacThuc      bit               [not null, default: 0, note: 'Email đã xác thực qua OTP']
+  LaNhanVien          bit               [not null, default: 0, note: '1=Nhân viên nội bộ, 0=Người dùng thường']
+  LanDangNhapCuoi     datetime          [null, note: 'Thời điểm đăng nhập gần nhất']
+  NgayTao             datetime          [not null, default: `GETDATE()`]
+  NgayCapNhat         datetime          [null]
+}
+
+Table VaiTro [note: 'Danh mục vai trò theo mô hình RBAC'] {
+  MaVaiTro    int           [pk, increment, note: 'Định danh số tự động tăng']
+  TenVaiTro   nvarchar(100) [not null, unique, note: 'Student | Instructor | Admin | CFO | CMO | Moderator | CS']
+  MoTa        nvarchar(500) [null]
+  NgayTao     datetime      [not null, default: `GETDATE()`]
+}
+
+Table VaiTroNguoiDung [note: 'Liên kết nhiều-nhiều NguoiDung ↔ VaiTro'] {
+  MaVaiTroNguoiDung   int               [pk, increment]
+  MaNguoiDung         uniqueidentifier  [not null, ref: > NguoiDung.MaNguoiDung]
+  MaVaiTro            int               [not null, ref: > VaiTro.MaVaiTro]
+  NgayGanVaiTro       datetime          [not null, default: `GETDATE()`]
+  GanBoi              uniqueidentifier  [null, ref: > NguoiDung.MaNguoiDung, note: 'Admin thực hiện gán']
+
+  indexes {
+    (MaNguoiDung, MaVaiTro) [unique]
+  }
+}
+
+Table MaOtp [note: 'Mã OTP/token một lần cho xác thực email, đặt lại mật khẩu'] {
+  MaToken     int               [pk, increment]
+  MaNguoiDung uniqueidentifier  [not null, ref: > NguoiDung.MaNguoiDung]
+  GiaTriToken nvarchar(512)     [not null, note: 'Giá trị OTP đã mã hóa']
+  LoaiToken   nvarchar(50)      [not null, note: 'EmailVerify | PasswordReset | TwoFA']
+  HetHanLuc   datetime          [not null, note: 'Thời điểm hết hiệu lực (TTL)']
+  DaSuDung    bit               [not null, default: 0]
+  NgayTao     datetime          [not null, default: `GETDATE()`]
+}
+
+Table PhienLamViec [note: 'Quản lý phiên đăng nhập, hỗ trợ đa thiết bị & đăng xuất từ xa'] {
+  MaPhien           uniqueidentifier  [pk, default: `NEWSEQUENTIALID()`]
+  MaNguoiDung       uniqueidentifier  [not null, ref: > NguoiDung.MaNguoiDung]
+  TokenLamMoi       nvarchar(512)     [not null, note: 'Refresh Token để cấp lại Access Token']
+  DiaChiIP          nvarchar(50)      [null]
+  ThongTinThietBi   nvarchar(500)     [null, note: 'Trình duyệt / hệ điều hành']
+  ViTri             nvarchar(200)     [null, note: 'Vị trí địa lý ước tính theo IP']
+  HetHanLuc         datetime          [not null, note: 'Mặc định 7 ngày']
+  DaThuHoi          bit               [not null, default: 0, note: 'Force Logout']
+  NgayTao           datetime          [not null, default: `GETDATE()`]
+}
+
+Table NhatKyKiemToan [note: 'Ghi nhận hành động quan trọng phục vụ kiểm tra bảo mật'] {
+  MaLog         bigint            [pk, increment]
+  MaNguoiDung   uniqueidentifier  [null, ref: > NguoiDung.MaNguoiDung, note: 'NULL nếu là hệ thống tự động']
+  HanhDong      nvarchar(200)     [not null, note: 'Login | DeleteCourse | ApprovePayout...']
+  LoaiDoiTuong  nvarchar(100)     [null, note: 'User | Course | Order...']
+  MaDoiTuong    nvarchar(100)     [null]
+  GiaTriCu      nvarchar(max)     [null, note: 'JSON - Giá trị trước khi thay đổi']
+  GiaTriMoi     nvarchar(max)     [null, note: 'JSON - Giá trị sau khi thay đổi']
+  DiaChiIP      nvarchar(50)      [null]
+  TrinhDuyet    nvarchar(500)     [null]
+  ThoiDiem      datetime          [not null, default: `GETDATE()`]
+}
+
+// ============================================================
+//  NHÓM 2: DỮ LIỆU GỐC & CẤU HÌNH HỆ THỐNG
+// ============================================================
+
+Table DanhMuc [note: 'Phân loại khóa học, hỗ trợ cấu trúc cây cha-con (đệ quy)'] {
+  MaDanhMuc     int           [pk, increment]
+  MaDanhMucCha  int           [null, ref: > DanhMuc.MaDanhMuc, note: 'NULL nếu là danh mục gốc cấp 1']
+  TenDanhMuc    nvarchar(200) [not null]
+  DuongDanURL   varchar(200)  [not null, unique, note: 'Slug chuẩn SEO']
+  ThuTuHienThi  int           [not null, default: 0]
+  DangHienThi   bit           [not null, default: 1]
+  DuongDanIcon  nvarchar(500) [null]
+  NgayTao       datetime      [not null, default: `GETDATE()`]
+}
+
+Table NhanTuKhoa [note: 'Nhãn từ khóa dùng phân loại và gợi ý khóa học'] {
+  MaNhan      int           [pk, increment]
+  TenNhan     nvarchar(100) [not null, unique]
+  DuongDanURL varchar(100)  [not null, unique]
+  SoLuotDung  int           [not null, default: 0]
+}
+
+Table CauHinhHeThong [note: 'Tham số cấu hình hệ thống, thay đổi không cần sửa code'] {
+  KhoaCauHinh   varchar(200)      [pk, note: 'PhiNenTang | MaxUploadSizeMB...']
+  GiaTriCauHinh nvarchar(max)     [not null]
+  KieuDuLieu    varchar(50)       [not null, note: 'Int | String | Boolean | JSON | Decimal']
+  MoTa          nvarchar(500)     [null]
+  NgayCapNhat   datetime          [null]
+  CapNhatBoi    uniqueidentifier  [null, ref: > NguoiDung.MaNguoiDung]
+}
+
+// ============================================================
+//  NHÓM 3: QUẢN TRỊ TÀI NGUYÊN SỐ (MEDIA)
+// ============================================================
+
+Table TaiNguyenSo [note: 'Quản lý tệp đa phương tiện: video, PDF, ảnh, source code'] {
+  MaTaiNguyen     uniqueidentifier  [pk, default: `NEWSEQUENTIALID()`]
+  TaiLenBoi       uniqueidentifier  [not null, ref: > NguoiDung.MaNguoiDung]
+  TenTep          nvarchar(500)     [not null]
+  LoaiTep         varchar(50)       [not null, note: 'Video | PDF | Image | ZipCode | Audio']
+  KieuMIME        varchar(100)      [not null]
+  DungLuongByte   bigint            [not null]
+  DuongDanLuuTru  nvarchar(1000)    [not null, note: 'URL trên S3 / Azure Blob']
+  ThoiLuong       int               [null, note: 'Giây, chỉ dùng cho Video']
+  TrangThai       varchar(50)       [not null, default: 'Pending', note: 'Pending | Processing | Ready | Failed']
+  NgayTao         datetime          [not null, default: `GETDATE()`]
+}
+
+Table MaHoaVideo [note: 'Phiên bản video đã mã hóa nhiều độ phân giải phục vụ HLS Streaming'] {
+  MaMaHoa       int               [pk, increment]
+  MaTaiNguyen   uniqueidentifier  [not null, ref: > TaiNguyenSo.MaTaiNguyen]
+  DoPhanGiai    varchar(20)       [not null, note: '1080p | 720p | 480p | 360p']
+  DuongDanHLS   nvarchar(1000)    [not null, note: 'File .m3u8 cho HLS Streaming']
+  TocDoBitKbps  int               [null]
+  MaHoaLuc      datetime          [not null, default: `GETDATE()`]
+}
+
+// ============================================================
+//  NHÓM 4: VÒNG ĐỜI KHÓA HỌC
+// ============================================================
+
+Table KhoaHoc [note: 'Thông tin định danh và thương mại của toàn bộ khóa học'] {
+  MaKhoaHoc             uniqueidentifier  [pk, default: `NEWSEQUENTIALID()`]
+  MaGiangVien           uniqueidentifier  [not null, ref: > NguoiDung.MaNguoiDung]
+  MaDanhMuc             int               [not null, ref: > DanhMuc.MaDanhMuc]
+  TieuDe                nvarchar(500)     [not null]
+  DuongDanURL           varchar(500)      [not null, unique, note: 'Slug SEO']
+  TieuDeNho             nvarchar(500)     [null]
+  MoTa                  nvarchar(max)     [null]
+  MucTieuDauRa          nvarchar(max)     [null, note: 'JSON array']
+  YeuCauDieuKien        nvarchar(max)     [null, note: 'JSON array']
+  TrinhDo               varchar(50)       [not null, note: 'Beginner | Intermediate | Advanced | AllLevels']
+  NgonNgu               varchar(50)       [not null, default: 'Vietnamese']
+  Gia                   decimal(18,2)     [not null, note: 'CHECK >= 0. 0 = Miễn phí']
+  DuongDanAnhDaiDien    nvarchar(1000)    [null]
+  MaVideoGioiThieu      uniqueidentifier  [null, ref: > TaiNguyenSo.MaTaiNguyen]
+  TongThoiLuong         int               [not null, default: 0, note: 'Tổng giây, tự động cập nhật']
+  TongBaiGiang          int               [not null, default: 0]
+  DiemDanhGiaTrungBinh  decimal(3,2)      [not null, default: 0]
+  TongDanhGia           int               [not null, default: 0]
+  TongGhiDanh           int               [not null, default: 0]
+  TrangThai             int               [not null, default: 0, note: '0=Draft|1=Pending|2=Published|3=Rejected|4=Archived']
+  GhiChuTuChoi          nvarchar(max)     [null]
+  XuatBanLuc            datetime          [null]
+  LuuTruLuc             datetime          [null]
+  DaXoa                 bit               [not null, default: 0]
+  NgayTao               datetime          [not null, default: `GETDATE()`]
+  NgayCapNhat           datetime          [null]
+}
+
+Table NhanKhoaHoc [note: 'Liên kết nhiều-nhiều KhoaHoc ↔ NhanTuKhoa'] {
+  MaKhoaHoc   uniqueidentifier  [not null, ref: > KhoaHoc.MaKhoaHoc]
+  MaNhan      int               [not null, ref: > NhanTuKhoa.MaNhan]
+  NgayTao     datetime          [not null, default: `GETDATE()`]
+
+  indexes {
+    (MaKhoaHoc, MaNhan) [pk]
+  }
+}
+
+Table Chuong [note: 'Chương / phần lớn trong giáo trình (cấp 1)'] {
+  MaChuong  int               [pk, increment]
+  MaKhoaHoc uniqueidentifier  [not null, ref: > KhoaHoc.MaKhoaHoc]
+  TieuDe    nvarchar(500)     [not null]
+  MoTa      nvarchar(max)     [null]
+  ThuTu     int               [not null]
+  NgayTao   datetime          [not null, default: `GETDATE()`]
+}
+
+Table BaiGiang [note: 'Bài giảng trong từng chương - đơn vị học nhỏ nhất (cấp 2)'] {
+  MaBaiGiang        int               [pk, increment]
+  MaChuong          int               [not null, ref: > Chuong.MaChuong]
+  TieuDe            nvarchar(500)     [not null]
+  LoaiBaiGiang      varchar(50)       [not null, note: 'Video | Quiz | Document | Assignment']
+  MaTaiNguyen       uniqueidentifier  [null, ref: > TaiNguyenSo.MaTaiNguyen]
+  MoTa              nvarchar(max)     [null]
+  ThoiLuong         int               [null, note: 'Giây']
+  ThuTu             int               [not null]
+  XemMienPhi        bit               [not null, default: 0]
+  TyLeXemToiThieu   int               [not null, default: 80, note: '% tối thiểu để tính Hoàn thành']
+  DangKhoa          bit               [not null, default: 0]
+  NgayTao           datetime          [not null, default: `GETDATE()`]
+}
+
+Table BaiKiemTra [note: 'Bài kiểm tra trắc nghiệm gắn với bài giảng'] {
+  MaBaiKiemTra        int         [pk, increment]
+  MaBaiGiang          int         [not null, ref: > BaiGiang.MaBaiGiang]
+  TieuDe              nvarchar(500) [not null]
+  DiemDat             decimal(5,2)  [not null, default: 70, note: '% điểm đạt tối thiểu']
+  GioiHanThoiGianPhut int           [null, note: 'NULL = không giới hạn']
+  SoLanToiDa          int           [null, note: 'NULL = không giới hạn']
+  XaoTronNgauNhien    bit           [not null, default: 1]
+  NgayTao             datetime      [not null, default: `GETDATE()`]
+}
+
+Table CauHoi [note: 'Ngân hàng câu hỏi của các bài kiểm tra'] {
+  MaCauHoi      int           [pk, increment]
+  MaBaiKiemTra  int           [not null, ref: > BaiKiemTra.MaBaiKiemTra]
+  NoiDungCauHoi nvarchar(max) [not null]
+  LoaiCauHoi    varchar(50)   [not null, note: 'SingleChoice | MultipleChoice | TrueFalse']
+  GiaiThich     nvarchar(max) [null, note: 'Hiển thị sau khi nộp bài']
+  ThuTu         int           [not null]
+  NgayTao       datetime      [not null, default: `GETDATE()`]
+}
+
+Table LuaChonDapAn [note: 'Các lựa chọn đáp án của từng câu hỏi trắc nghiệm'] {
+  MaLuaChon       int           [pk, increment]
+  MaCauHoi        int           [not null, ref: > CauHoi.MaCauHoi]
+  NoiDungLuaChon  nvarchar(max) [not null]
+  LaDapAnDung     bit           [not null, default: 0]
+  ThuTu           int           [not null]
+}
+
+// ============================================================
+//  NHÓM 5: GIAO DỊCH & GHI DANH
+// ============================================================
+
+Table MaGiamGia [note: 'Mã giảm giá của nền tảng hoặc giảng viên'] {
+  MaGiamGia       varchar(100)      [pk, note: 'SUMMER2025 | WELCOME30...']
+  MaChienDich     int               [null, ref: > ChienDich.MaChienDich, note: 'NULL = mã riêng lẻ']
+  MaGiangVien     uniqueidentifier  [null, ref: > NguoiDung.MaNguoiDung, note: 'NULL = mã của nền tảng']
+  LoaiGiamGia     int               [not null, note: '1=Phần trăm | 2=Số tiền cố định']
+  GiaTriGiam      decimal(18,2)     [not null, note: 'CHECK > 0']
+  GiamToiDa       decimal(18,2)     [null, note: 'Giới hạn tiền giảm tối đa khi dùng loại %']
+  DonHangToiThieu decimal(18,2)     [not null, default: 0]
+  GioiHanLuotDung int               [null, note: 'NULL = không giới hạn']
+  SoLuotDaDung    int               [not null, default: 0]
+  NgayBatDau      datetime          [not null]
+  NgayKetThuc     datetime          [not null]
+  DangHoatDong    bit               [not null, default: 1]
+  NgayTao         datetime          [not null, default: `GETDATE()`]
+}
+
+Table GioHang [note: 'Giỏ hàng tạm thời – 1 học viên = 1 giỏ'] {
+  MaGioHang   int               [pk, increment]
+  MaHocVien   uniqueidentifier  [not null, unique, ref: > NguoiDung.MaNguoiDung]
+  NgayTao     datetime          [not null, default: `GETDATE()`]
+  NgayCapNhat datetime          [null]
+}
+
+Table MatHangGioHang [note: 'Các khóa học nằm trong giỏ hàng'] {
+  MaMatHang   int               [pk, increment]
+  MaGioHang   int               [not null, ref: > GioHang.MaGioHang]
+  MaKhoaHoc   uniqueidentifier  [not null, ref: > KhoaHoc.MaKhoaHoc]
+  ThemVaoLuc  datetime          [not null, default: `GETDATE()`]
+}
+
+Table DonHang [note: 'Đơn hàng thanh toán, ghi nhận giao dịch'] {
+  MaDonHang           varchar(50)       [pk, note: 'ORD-YYYYMMDD-HEX']
+  MaHocVien           uniqueidentifier  [not null, ref: > NguoiDung.MaNguoiDung]
+  MaGiamGia           varchar(100)      [null, ref: > MaGiamGia.MaGiamGia]
+  SoTienGoc           decimal(18,2)     [not null, note: 'CHECK >= 0']
+  SoTienGiam          decimal(18,2)     [not null, default: 0]
+  TongTien            decimal(18,2)     [not null, note: 'CHECK >= 0. TongTien = SoTienGoc - SoTienGiam']
+  DonViTienTe         varchar(10)       [not null, default: 'VND']
+  CongThanhToan       varchar(50)       [not null, note: 'VNPay | Momo | Stripe | PayPal']
+  MaGiaoDichCong      nvarchar(200)     [null]
+  TrangThaiThanhToan  varchar(50)       [not null, default: 'Pending', note: 'Pending | Paid | Failed | Refunded']
+  ThanhToanLuc        datetime          [null]
+  DaXoa               bit               [not null, default: 0]
+  NgayTao             datetime          [not null, default: `GETDATE()`]
+
+  indexes {
+    MaHocVien
+    TrangThaiThanhToan
+  }
+}
+
+Table ChiTietDonHang [note: 'Chi tiết từng khóa học trong đơn hàng – lưu giá chốt tại thời điểm mua'] {
+  MaChiTietDonHang  int               [pk, increment]
+  MaDonHang         varchar(50)       [not null, ref: > DonHang.MaDonHang]
+  MaKhoaHoc         uniqueidentifier  [not null, ref: > KhoaHoc.MaKhoaHoc]
+  GiaTaiThoiDiemMua decimal(18,2)     [not null, note: 'Snapshot giá – không bị ảnh hưởng khi đổi giá sau']
+  GiamGiaApDung     decimal(18,2)     [not null, default: 0]
+}
+
+Table GhiDanh [note: 'Ánh xạ quyền sở hữu & truy cập khóa học sau thanh toán'] {
+  MaGhiDanh         int               [pk, increment]
+  MaHocVien         uniqueidentifier  [not null, ref: > NguoiDung.MaNguoiDung]
+  MaKhoaHoc         uniqueidentifier  [not null, ref: > KhoaHoc.MaKhoaHoc]
+  MaDonHang         varchar(50)       [null, ref: > DonHang.MaDonHang, note: 'NULL = ghi danh miễn phí']
+  GhiDanhLuc        datetime          [not null, default: `GETDATE()`]
+  TrangThaiTruyCap  varchar(50)       [not null, default: 'Active', note: 'Active | Revoked']
+  ThuHoiLuc         datetime          [null]
+
+  indexes {
+    (MaHocVien, MaKhoaHoc) [unique]
+    (MaHocVien, MaKhoaHoc) [name: 'IX_GhiDanh_HocVienKH']
+  }
+}
+
+Table HoanTien [note: 'Quản lý yêu cầu và trạng thái hoàn tiền'] {
+  MaHoanTien  int               [pk, increment]
+  MaDonHang   varchar(50)       [not null, ref: > DonHang.MaDonHang]
+  MaHocVien   uniqueidentifier  [not null, ref: > NguoiDung.MaNguoiDung]
+  LyDo        nvarchar(max)     [null]
+  SoTienHoan  decimal(18,2)     [not null]
+  TrangThai   varchar(50)       [not null, default: 'Pending', note: 'Pending | Approved | Rejected | Completed']
+  XuLyBoi     uniqueidentifier  [null, ref: > NguoiDung.MaNguoiDung, note: 'CFO xử lý']
+  XuLyLuc     datetime          [null]
+  NgayTao     datetime          [not null, default: `GETDATE()`]
+}
+
+// ============================================================
+//  NHÓM 6: TIẾN TRÌNH HỌC TẬP & ĐÁNH GIÁ
+// ============================================================
+
+Table TienDoHocTap [note: 'Theo dõi tiến độ học viên trên từng bài giảng'] {
+  MaTienDo        bigint      [pk, increment]
+  MaGhiDanh       int         [not null, ref: > GhiDanh.MaGhiDanh]
+  MaBaiGiang      int         [not null, ref: > BaiGiang.MaBaiGiang]
+  ThoiGianXemGiay int         [not null, default: 0, note: 'Cộng dồn từ Heartbeat']
+  ViTriXemCuoi    int         [not null, default: 0, note: 'Giây để Resume xem tiếp']
+  TrangThai       varchar(50) [not null, default: 'NotStarted', note: 'NotStarted | InProgress | Completed']
+  HoanThanhLuc    datetime    [null]
+  NgayCapNhat     datetime    [null]
+
+  indexes {
+    (MaGhiDanh, MaBaiGiang) [unique]
+    (MaGhiDanh, MaBaiGiang) [name: 'IX_TienDoHocTap_GhiDanhBai']
+  }
+}
+
+Table LanLamBai [note: 'Kết quả mỗi lần học viên làm bài kiểm tra'] {
+  MaLanLam          int               [pk, increment]
+  MaHocVien         uniqueidentifier  [not null, ref: > NguoiDung.MaNguoiDung]
+  MaBaiKiemTra      int               [not null, ref: > BaiKiemTra.MaBaiKiemTra]
+  DiemSo            decimal(5,2)      [not null, note: 'Điểm % đạt được']
+  TongCauHoi        int               [not null]
+  SoCauDung         int               [not null]
+  DaDat             bit               [not null, note: '1=Đạt (>=DiemDat), 0=Chưa đạt']
+  ThoiGianLamGiay   int               [null]
+  BatDauLamLuc      datetime          [not null, default: `GETDATE()`]
+  NopBaiLuc         datetime          [null]
+}
+
+Table DapAnHocVien [note: 'Chi tiết đáp án học viên chọn trong từng lần làm bài'] {
+  MaDapAnChon     int [pk, increment]
+  MaLanLam        int [not null, ref: > LanLamBai.MaLanLam]
+  MaCauHoi        int [not null, ref: > CauHoi.MaCauHoi]
+  MaLuaChonDaChon int [null, ref: > LuaChonDapAn.MaLuaChon]
+  LaDapAnDung     bit [not null]
+}
+
+Table ChungChi [note: 'Chứng chỉ số cấp khi học viên hoàn thành 100% khóa học'] {
+  MaChungChi          uniqueidentifier  [pk, default: `NEWSEQUENTIALID()`]
+  MaHocVien           uniqueidentifier  [not null, ref: > NguoiDung.MaNguoiDung]
+  MaKhoaHoc           uniqueidentifier  [not null, ref: > KhoaHoc.MaKhoaHoc]
+  NgayCapPhat         datetime          [not null, default: `GETDATE()`]
+  MaXacThuc           varchar(100)      [not null, unique, note: 'Mã chống làm giả, dùng cho URL/QR']
+  DuongDanPDFChungChi nvarchar(1000)    [null]
+
+  indexes {
+    (MaHocVien, MaKhoaHoc) [unique]
+  }
+}
+
+Table GhiChu [note: 'Ghi chú riêng tư của học viên gắn với từng giây trong video'] {
+  MaGhiChu    int               [pk, increment]
+  MaHocVien   uniqueidentifier  [not null, ref: > NguoiDung.MaNguoiDung]
+  MaBaiGiang  int               [not null, ref: > BaiGiang.MaBaiGiang]
+  ThoiDiem    int               [not null, note: 'Giây trong video']
+  NoiDung     nvarchar(max)     [not null]
+  NgayTao     datetime          [not null, default: `GETDATE()`]
+  NgayCapNhat datetime          [null]
+}
+
+// ============================================================
+//  NHÓM 7: QUẢN LÝ LỊCH HỌC & ĐIỂM DANH
+// ============================================================
+
+Table LichHoc [note: 'Lịch học cam kết do học viên tự thiết lập'] {
+  MaLichHoc             int               [pk, increment]
+  MaHocVien             uniqueidentifier  [not null, ref: > NguoiDung.MaNguoiDung]
+  MaKhoaHoc             uniqueidentifier  [not null, ref: > KhoaHoc.MaKhoaHoc]
+  NgayTrongTuan         varchar(50)       [not null, note: 'JSON array vd [1,3,5] = T2,T4,T6']
+  GioBatDau             time              [not null]
+  GioKetThuc            time              [not null]
+  ThoiLuongToiThieuPhut int               [not null, default: 30]
+  DangHoatDong          bit               [not null, default: 1]
+  NgayTao               datetime          [not null, default: `GETDATE()`]
+}
+
+Table DiemDanh [note: 'Bản ghi điểm danh từng phiên học'] {
+  MaDiemDanh            bigint            [pk, increment]
+  MaLichHoc             int               [not null, ref: > LichHoc.MaLichHoc]
+  MaHocVien             uniqueidentifier  [not null, ref: > NguoiDung.MaNguoiDung]
+  MaKhoaHoc             uniqueidentifier  [not null, ref: > KhoaHoc.MaKhoaHoc]
+  NgayLichHoc           date              [not null]
+  DiemDanhLuc           datetime          [null]
+  ThoiGianXemThucTeGiay int               [not null, default: 0]
+  HopLe                 bit               [not null, default: 0, note: 'Xem đủ thời lượng tối thiểu']
+  TrangThai             varchar(50)       [not null, note: 'Present | Absent | Missed']
+}
+
+Table ChuoiHocLienTiep [note: 'Theo dõi chuỗi ngày học liên tiếp – Gamification'] {
+  MaChuoi           int               [pk, increment]
+  MaHocVien         uniqueidentifier  [not null, unique, ref: > NguoiDung.MaNguoiDung]
+  ChuoiHienTai      int               [not null, default: 0]
+  ChuoiDaiNhat      int               [not null, default: 0]
+  NgayHoatDongCuoi  date              [null]
+  TheDoangBang      int               [not null, default: 0, note: 'Thẻ chống mất streak']
+  NgayCapNhat       datetime          [null]
+}
+
+// ============================================================
+//  NHÓM 8: TƯƠNG TÁC HỌC THUẬT & ĐÁNH GIÁ
+// ============================================================
+
+Table DanhGia [note: 'Đánh giá sao và nhận xét của học viên về khóa học'] {
+  MaDanhGia     int               [pk, increment]
+  MaKhoaHoc     uniqueidentifier  [not null, ref: > KhoaHoc.MaKhoaHoc]
+  MaHocVien     uniqueidentifier  [not null, ref: > NguoiDung.MaNguoiDung]
+  DiemSao       int               [not null, note: 'CHECK BETWEEN 1 AND 5']
+  NhanXet       nvarchar(max)     [null]
+  DaMuaKhoaHoc  bit               [not null, default: 1]
+  BiBaoCao      bit               [not null, default: 0]
+  DaXoa         bit               [not null, default: 0]
+  NgayTao       datetime          [not null, default: `GETDATE()`]
+  NgayCapNhat   datetime          [null]
+
+  indexes {
+    (MaHocVien, MaKhoaHoc) [unique]
+  }
+}
+
+Table ChuDeHoiDap [note: 'Chủ đề câu hỏi học thuật gắn với bài giảng'] {
+  MaChuDe         int               [pk, increment]
+  MaBaiGiang      int               [not null, ref: > BaiGiang.MaBaiGiang]
+  MaHocVien       uniqueidentifier  [not null, ref: > NguoiDung.MaNguoiDung]
+  TieuDe          nvarchar(500)     [not null]
+  NoiDungChiTiet  nvarchar(max)     [not null]
+  SoLuotUpvote    int               [not null, default: 0]
+  DaGiaiDap       bit               [not null, default: 0]
+  DaXoa           bit               [not null, default: 0]
+  NgayTao         datetime          [not null, default: `GETDATE()`]
+}
+
+Table TraLoiHoiDap [note: 'Câu trả lời trong các chủ đề Hỏi & Đáp'] {
+  MaTraLoi        int               [pk, increment]
+  MaChuDe         int               [not null, ref: > ChuDeHoiDap.MaChuDe]
+  MaNguoiDung     uniqueidentifier  [not null, ref: > NguoiDung.MaNguoiDung]
+  NoiDungChiTiet  nvarchar(max)     [not null]
+  DuocGhimBoi     bit               [not null, default: 0, note: 'Giảng viên ghim lên đầu']
+  SoLuotUpvote    int               [not null, default: 0]
+  DaXoa           bit               [not null, default: 0]
+  NgayTao         datetime          [not null, default: `GETDATE()`]
+}
+
+// ============================================================
+//  NHÓM 9: MARKETING & KHUYẾN MÃI
+// ============================================================
+
+Table ChienDich [note: 'Chiến dịch marketing (Flash Sale, Black Friday...)'] {
+  MaChienDich     int               [pk, increment]
+  TenChienDich    nvarchar(300)     [not null]
+  MoTa            nvarchar(max)     [null]
+  NgayBatDau      datetime          [not null]
+  NgayKetThuc     datetime          [not null, note: 'CHECK NgayKetThuc > NgayBatDau']
+  DuongDanBanner  nvarchar(1000)    [null]
+  DangHoatDong    bit               [not null, default: 1]
+  TaoBoi          uniqueidentifier  [not null, ref: > NguoiDung.MaNguoiDung, note: 'CMO tạo chiến dịch']
+  NgayTao         datetime          [not null, default: `GETDATE()`]
+}
+
+Table TuongTacNguoiDung [note: 'Hành vi tương tác của người dùng – dữ liệu đầu vào gợi ý'] {
+  MaTuongTac    bigint            [pk, increment]
+  MaNguoiDung   uniqueidentifier  [not null, ref: > NguoiDung.MaNguoiDung]
+  MaKhoaHoc     uniqueidentifier  [not null, ref: > KhoaHoc.MaKhoaHoc]
+  LoaiTuongTac  varchar(50)       [not null, note: 'View | AddToCart | Purchase | Search | Wishlist']
+  ThoiDiem      datetime          [not null, default: `GETDATE()`]
+  MaPhien       nvarchar(100)     [null, note: 'ID phiên trình duyệt']
+
+  indexes {
+    (MaNguoiDung, MaKhoaHoc, ThoiDiem) [name: 'IX_TuongTac_NguoiDung_ThoiDiem']
+  }
+}
+
+Table ThongBaoKhoaHoc [note: 'Thông báo từ giảng viên gửi đến học viên đã mua khóa học'] {
+  MaThongBao      int               [pk, increment]
+  MaKhoaHoc       uniqueidentifier  [not null, ref: > KhoaHoc.MaKhoaHoc]
+  MaGiangVien     uniqueidentifier  [not null, ref: > NguoiDung.MaNguoiDung]
+  TieuDeThongBao  nvarchar(500)     [not null]
+  NoiDung         nvarchar(max)     [not null]
+  GuiLuc          datetime          [not null, default: `GETDATE()`]
+  TongNguoiNhan   int               [not null, default: 0]
+}
+
+// ============================================================
+//  NHÓM 10: TÀI CHÍNH & GIẢI NGÂN
+// ============================================================
+
+Table HoSoGiangVien [note: 'Hồ sơ mở rộng, thông tin KYC và cấu hình tài chính giảng viên'] {
+  MaGiangVien             uniqueidentifier  [pk, ref: - NguoiDung.MaNguoiDung, note: '1-1 với NguoiDung']
+  DanhHieu                nvarchar(300)     [null, note: 'Senior Developer | Author...']
+  TieuSuChiTiet           nvarchar(max)     [null]
+  DuongDanWebsite         nvarchar(500)     [null]
+  DuongDanLinkedIn        nvarchar(500)     [null]
+  ThongTinNganHangMaHoa   nvarchar(max)     [null, note: 'Mã hóa AES-256']
+  MaSoThueMaHoa           nvarchar(max)     [null, note: 'Mã hóa AES-256']
+  TyLeDoanhThu            decimal(5,2)      [not null, default: 70, note: '% doanh thu giảng viên nhận']
+  TrangThaiKYC            varchar(50)       [not null, default: 'Pending', note: 'Pending | Verified | Rejected']
+  KyKetDieuKhoanLuc       datetime          [null]
+  NgayCapNhat             datetime          [null]
+}
+
+Table SoCaiKeToan [note: 'Bút toán phân bổ doanh thu sau mỗi đơn hàng thành công'] {
+  MaBuToan          bigint            [pk, increment]
+  MaDonHang         varchar(50)       [not null, ref: > DonHang.MaDonHang]
+  MaGiangVien       uniqueidentifier  [not null, ref: > NguoiDung.MaNguoiDung]
+  MaKhoaHoc         uniqueidentifier  [not null, ref: > KhoaHoc.MaKhoaHoc]
+  DoanhThuGop       decimal(18,2)     [not null, note: 'DoanhThuGop = PhiNenTang + ThuNhapGiangVien']
+  PhiNenTang        decimal(18,2)     [not null]
+  ThuNhapGiangVien  decimal(18,2)     [not null]
+  NgayGiaiPhong     datetime          [not null, note: 'ThanhToanLuc + Holding Period (vd 30 ngày)']
+  DaGiaiPhong       bit               [not null, default: 0]
+  GiaiPhongLuc      datetime          [null]
+  NgayTao           datetime          [not null, default: `GETDATE()`]
+}
+
+Table YeuCauRutTien [note: 'Yêu cầu rút tiền doanh thu của giảng viên – CFO phê duyệt'] {
+  MaYeuCau        int               [pk, increment]
+  MaGiangVien     uniqueidentifier  [not null, ref: > NguoiDung.MaNguoiDung]
+  SoTienYeuCau    decimal(18,2)     [not null, note: 'CHECK > 0']
+  TrangThai       varchar(50)       [not null, default: 'Pending', note: 'Pending | Approved | Paid | Rejected']
+  SnapshotNganHang nvarchar(max)    [not null, note: 'JSON snapshot thông tin ngân hàng lúc rút']
+  DuyetBoi        uniqueidentifier  [null, ref: > NguoiDung.MaNguoiDung, note: 'CFO xử lý']
+  GhiChuDuyet     nvarchar(max)     [null]
+  ThanhToanLuc    datetime          [null]
+  NgayTao         datetime          [not null, default: `GETDATE()`]
+}
+
+Table TongHopDoanhThuNgay [note: 'Tổng hợp doanh thu theo ngày – Cron Job lúc nửa đêm. Chỉ đọc'] {
+  NgayTongHop   date              [not null]
+  MaKhoaHoc     uniqueidentifier  [not null, ref: > KhoaHoc.MaKhoaHoc]
+  TongDonHang   int               [not null, default: 0]
+  TongDoanhThu  decimal(18,2)     [not null, default: 0]
+  TongHoanTien  int               [not null, default: 0]
+  SoTienHoan    decimal(18,2)     [not null, default: 0]
+
+  indexes {
+    (NgayTongHop, MaKhoaHoc) [pk]
+    (NgayTongHop, MaKhoaHoc) [name: 'IX_TongHop_NgayKhoaHoc']
+  }
+}
+
+Table ThongKeThoatBaiHoc [note: 'Thống kê tỷ lệ hoàn thành & điểm thoát bài học. Chỉ đọc'] {
+  MaBaiGiang                int           [pk, ref: - BaiGiang.MaBaiGiang]
+  SoLuotXem                 int           [not null, default: 0]
+  SoLuotHoanThanh           int           [not null, default: 0]
+  ThoiGianXemTrungBinhGiay  int           [not null, default: 0]
+  TyLeThoat                 decimal(5,2)  [not null, default: 0, note: '(SoLuotXem - SoLuotHoanThanh) / SoLuotXem * 100']
+  CapNhatLanCuoi            datetime      [not null]
+}
+
+// ============================================================
+//  NHÓM 11: HỖ TRỢ KHÁCH HÀNG (TICKETING)
+// ============================================================
+
+Table PhieuHoTro [note: 'Phiếu hỗ trợ khách hàng – quản lý vòng đời từ tạo đến đóng'] {
+  MaPhieu             varchar(50)       [pk, note: 'TKT-YYYYMMDD-HEX']
+  MaNguoiGuiYeuCau    uniqueidentifier  [not null, ref: > NguoiDung.MaNguoiDung]
+  PhanCongCho         uniqueidentifier  [null, ref: > NguoiDung.MaNguoiDung, note: 'Nhân viên CS xử lý']
+  PhanLoai            varchar(100)      [not null, note: 'Tech | Billing | Report | Account | Content']
+  TieuDeThongBao      nvarchar(500)     [not null]
+  MucUuTien           varchar(50)       [not null, default: 'Normal', note: 'Low | Normal | High | Urgent']
+  TrangThai           varchar(50)       [not null, default: 'Open', note: 'Open | InProgress | Resolved | Closed']
+  MaDonHangLienQuan   varchar(50)       [null, ref: > DonHang.MaDonHang]
+  DuLieuBoiCanh       nvarchar(max)     [null, note: 'JSON: thiết bị, IP, MaDonHang...']
+  DiemHaiLong         int               [null, note: 'CHECK BETWEEN 1 AND 5']
+  GiaiQuyetLuc        datetime          [null]
+  DongPhieuLuc        datetime          [null]
+  NgayTao             datetime          [not null, default: `GETDATE()`]
+
+  indexes {
+    TrangThai [name: 'IX_PhieuHoTro_TrangThai']
+    PhanCongCho [name: 'IX_PhieuHoTro_PhanCong']
+  }
+}
+
+Table PhanHoiPhieu [note: 'Nội dung trao đổi qua lại trong từng phiếu hỗ trợ'] {
+  MaTraLoi        int               [pk, increment]
+  MaPhieu         varchar(50)       [not null, ref: > PhieuHoTro.MaPhieu]
+  MaNguoiGui      uniqueidentifier  [not null, ref: > NguoiDung.MaNguoiDung]
+  NoiDungTinNhan  nvarchar(max)     [not null]
+  TepDinhKem      nvarchar(max)     [null, note: 'JSON array URL']
+  GhiChuNoiBo     bit               [not null, default: 0, note: 'Ghi chú nội bộ CS, không hiện cho user']
+  NgayTao         datetime          [not null, default: `GETDATE()`]
+}
+
+// ============================================================
+//  NHÓM 12: NHÂN VIÊN NỘI BỘ & BẢO MẬT ĐĂNG NHẬP
+// ============================================================
+
+Table HoSoNhanVien [note: 'Hồ sơ nhân viên nội bộ (Admin, CFO, CMO, Moderator, CS) – liên kết 1-1 với NguoiDung'] {
+  MaNhanVien        uniqueidentifier  [pk, ref: - NguoiDung.MaNguoiDung, note: '1-1 với NguoiDung (LaNhanVien=1)']
+  MaNhanVienNoiBo   varchar(50)       [null, unique, note: 'EMP-001...']
+  PhongBan          nvarchar(200)     [null, note: 'Finance | Marketing | Content | CustomerSupport | IT']
+  ChucDanh          nvarchar(200)     [null, note: 'CFO | CS Agent | Content Moderator...']
+  SoDienThoaiNoiBo  varchar(20)       [null]
+  QuyenBoSung       nvarchar(max)     [null, note: 'JSON danh sách quyền bổ sung ngoài Role']
+  NgayVaoLam        date              [null]
+  DangHoatDong      bit               [not null, default: 1]
+  NgayTao           datetime          [not null, default: `GETDATE()`]
+  NgayCapNhat       datetime          [null]
+}
+
+Table LanDangNhap [note: 'Lịch sử đăng nhập (thành/bại) – Rate Limiting, chống Brute-force. Tham chiếu mềm theo Email'] {
+  MaLanLam            bigint          [pk, increment]
+  Email               nvarchar(255)   [not null, note: 'Tham chiếu mềm – lưu cả email không tồn tại']
+  DiaChiIP            nvarchar(50)    [null]
+  TrinhDuyet          nvarchar(500)   [null]
+  DangNhapThanhCong   bit             [not null, default: 0]
+  LyDoThatBai         nvarchar(200)   [null, note: 'WrongPassword | AccountLocked | NotVerified']
+  BatDauLamLuc        datetime        [not null, default: `GETDATE()`]
+
+  indexes {
+    (Email, BatDauLamLuc) [name: 'IX_LanDangNhap_Email_Time']
+    (DiaChiIP, BatDauLamLuc) [name: 'IX_LanDangNhap_IP_Time']
+  }
+}
