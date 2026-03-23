@@ -1,5 +1,8 @@
+using System.Text;
 using backend.Data;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,11 +18,40 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddControllers();
 
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<backend.Repository.Services.IAuthService, backend.Repository.Repositories.AuthRepository>();
-builder.Services.AddScoped<backend.Repository.Services.IEmailService, backend.Repository.Repositories.EmailService>();
+builder.Services.AddScoped<
+    backend.Repository.Services.IAuthService,
+    backend.Repository.Repositories.AuthRepository
+>();
+builder.Services.AddScoped<
+    backend.Repository.Services.IEmailService,
+    backend.Repository.Repositories.EmailService
+>();
 
-// Configure Authentication (Basic setup for Register/Login logic)
-builder.Services.AddAuthentication();
+// Configure Authentication
+var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+var secretKey = jwtSettings["SecretKey"]!;
+
+builder
+    .Services.AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtSettings["Issuer"],
+            ValidAudience = jwtSettings["Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+            ClockSkew = TimeSpan.Zero,
+        };
+    });
+
 builder.Services.AddAuthorization();
 
 var app = builder.Build();

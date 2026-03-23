@@ -11,5 +11,8 @@ namespace backend.Repository.Services
         Task<IActionResult> ForgotPasswordAsync(ForgotPasswordRequest request);
         Task<IActionResult> ResetPasswordAsync(ResetPasswordRequest request);
         Task<IActionResult> ResendOtpAsync(string email, string type);
+        Task<IActionResult> ChangePasswordAsync(Guid userId, ChangePasswordRequest request);
+        Task<IActionResult> GetProfileAsync(Guid userId);
+        Task<IActionResult> UpdateProfileAsync(Guid userId, UpdateProfileRequest request);
     }
 }

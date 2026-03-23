@@ -204,25 +204,32 @@ namespace backend.Repository.Repositories
                 }
             );
         }
+
         public async Task<IActionResult> VerifyOtpAsync(VerifyOtpRequest request)
         {
-            var user = await _context.NguoiDungs.FirstOrDefaultAsync(u => u.Email == request.Email && !u.DaXoa);
+            var user = await _context.NguoiDungs.FirstOrDefaultAsync(u =>
+                u.Email == request.Email && !u.DaXoa
+            );
             if (user == null)
             {
                 return new NotFoundObjectResult(new { message = "Email không tồn tại." });
             }
 
-            var otp = await _context.MaOtps
-                .Where(o => o.MaNguoiDung == user.MaNguoiDung 
-                         && o.GiaTriToken == request.Code 
-                         && o.LoaiToken == request.Type 
-                         && !o.DaSuDung)
+            var otp = await _context
+                .MaOtps.Where(o =>
+                    o.MaNguoiDung == user.MaNguoiDung
+                    && o.GiaTriToken == request.Code
+                    && o.LoaiToken == request.Type
+                    && !o.DaSuDung
+                )
                 .OrderByDescending(o => o.NgayTao)
                 .FirstOrDefaultAsync();
 
             if (otp == null || otp.HetHanLuc < DateTime.Now)
             {
-                return new BadRequestObjectResult(new { message = "Mã xác thực không chính xác hoặc đã hết hạn." });
+                return new BadRequestObjectResult(
+                    new { message = "Mã xác thực không chính xác hoặc đã hết hạn." }
+                );
             }
 
             otp.DaSuDung = true;
@@ -241,11 +248,15 @@ namespace backend.Repository.Repositories
 
         public async Task<IActionResult> ForgotPasswordAsync(ForgotPasswordRequest request)
         {
-            var user = await _context.NguoiDungs.FirstOrDefaultAsync(u => u.Email == request.Email && !u.DaXoa);
+            var user = await _context.NguoiDungs.FirstOrDefaultAsync(u =>
+                u.Email == request.Email && !u.DaXoa
+            );
             if (user == null)
             {
                 // Để bảo mật, không nên cho biết email tồn tại hay không, nhưng ở đây có thể trả về OK
-                return new OkObjectResult(new { message = "Nếu email tồn tại, một mã xác nhận đã được gửi đi." });
+                return new OkObjectResult(
+                    new { message = "Nếu email tồn tại, một mã xác nhận đã được gửi đi." }
+                );
             }
 
             var otpCode = new Random().Next(100000, 999999).ToString();
@@ -269,23 +280,29 @@ namespace backend.Repository.Repositories
 
         public async Task<IActionResult> ResetPasswordAsync(ResetPasswordRequest request)
         {
-            var user = await _context.NguoiDungs.FirstOrDefaultAsync(u => u.Email == request.Email && !u.DaXoa);
+            var user = await _context.NguoiDungs.FirstOrDefaultAsync(u =>
+                u.Email == request.Email && !u.DaXoa
+            );
             if (user == null)
             {
                 return new NotFoundObjectResult(new { message = "Email không tồn tại." });
             }
 
-            var otp = await _context.MaOtps
-                .Where(o => o.MaNguoiDung == user.MaNguoiDung 
-                         && o.GiaTriToken == request.Code 
-                         && o.LoaiToken == "PasswordReset" 
-                         && !o.DaSuDung)
+            var otp = await _context
+                .MaOtps.Where(o =>
+                    o.MaNguoiDung == user.MaNguoiDung
+                    && o.GiaTriToken == request.Code
+                    && o.LoaiToken == "PasswordReset"
+                    && !o.DaSuDung
+                )
                 .OrderByDescending(o => o.NgayTao)
                 .FirstOrDefaultAsync();
 
             if (otp == null || otp.HetHanLuc < DateTime.Now)
             {
-                return new BadRequestObjectResult(new { message = "Mã xác thực không chính xác hoặc đã hết hạn." });
+                return new BadRequestObjectResult(
+                    new { message = "Mã xác thực không chính xác hoặc đã hết hạn." }
+                );
             }
 
             var salt = PasswordHelper.GenerateSalt();
@@ -306,7 +323,9 @@ namespace backend.Repository.Repositories
 
         public async Task<IActionResult> ResendOtpAsync(string email, string type)
         {
-            var user = await _context.NguoiDungs.FirstOrDefaultAsync(u => u.Email == email && !u.DaXoa);
+            var user = await _context.NguoiDungs.FirstOrDefaultAsync(u =>
+                u.Email == email && !u.DaXoa
+            );
             if (user == null)
             {
                 return new NotFoundObjectResult(new { message = "Email không tồn tại." });
@@ -332,6 +351,107 @@ namespace backend.Repository.Repositories
                 await _emailService.SendResetPasswordEmailAsync(user.Email, otpCode, user.HoTen);
 
             return new OkObjectResult(new { message = "Mã mới đã được gửi." });
+        }
+
+        public async Task<IActionResult> ChangePasswordAsync(
+            Guid userId,
+            ChangePasswordRequest request
+        )
+        {
+            var user = await _context.NguoiDungs.FirstOrDefaultAsync(u =>
+                u.MaNguoiDung == userId && !u.DaXoa
+            );
+            if (user == null)
+            {
+                return new NotFoundObjectResult(new { message = "Người dùng không tồn tại." });
+            }
+
+            // 1. Kiểm tra mật khẩu cũ
+            if (
+                !PasswordHelper.VerifyPassword(
+                    request.OldPassword,
+                    user.MuoiMatKhau,
+                    user.MatKhauBam
+                )
+            )
+            {
+                return new BadRequestObjectResult(new { message = "Mật khẩu cũ không chính xác." });
+            }
+
+            // 2. Cập nhật mật khẩu mới
+            var salt = PasswordHelper.GenerateSalt();
+            var hashedPassword = PasswordHelper.HashPassword(request.NewPassword, salt);
+
+            user.MatKhauBam = hashedPassword;
+            user.MuoiMatKhau = salt;
+            user.NgayCapNhat = DateTime.Now;
+
+            _context.NguoiDungs.Update(user);
+
+            // 3. Đăng xuất khỏi mọi phiên làm việc cũ (Tùy chọn, tăng bảo mật)
+            var sessions = await _context
+                .PhienLamViecs.Where(s => s.MaNguoiDung == userId && !s.DaThuHoi)
+                .ToListAsync();
+            foreach (var session in sessions)
+            {
+                session.DaThuHoi = true;
+            }
+            _context.PhienLamViecs.UpdateRange(sessions);
+
+            await _context.SaveChangesAsync();
+
+            return new OkObjectResult(
+                new { message = "Đổi mật khẩu thành công. Vui lòng đăng nhập lại." }
+            );
+        }
+
+        public async Task<IActionResult> GetProfileAsync(Guid userId)
+        {
+            var user = await _context
+                .NguoiDungs.Where(u => u.MaNguoiDung == userId && !u.DaXoa)
+                .Select(u => new
+                {
+                    u.MaNguoiDung,
+                    u.Email,
+                    u.HoTen,
+                    u.DuongDanAnhDaiDien,
+                    u.TieuSu,
+                    u.EmailDaXacThuc,
+                    u.LaNhanVien,
+                    u.NgayTao,
+                })
+                .FirstOrDefaultAsync();
+
+            if (user == null)
+            {
+                return new NotFoundObjectResult(new { message = "Người dùng không tồn tại." });
+            }
+
+            return new OkObjectResult(user);
+        }
+
+        public async Task<IActionResult> UpdateProfileAsync(
+            Guid userId,
+            UpdateProfileRequest request
+        )
+        {
+            var user = await _context.NguoiDungs.FirstOrDefaultAsync(u =>
+                u.MaNguoiDung == userId && !u.DaXoa
+            );
+            if (user == null)
+            {
+                return new NotFoundObjectResult(new { message = "Người dùng không tồn tại." });
+            }
+
+            user.HoTen = request.HoTen ?? user.HoTen;
+            user.DuongDanAnhDaiDien = request.DuongDanAnhDaiDien ?? user.DuongDanAnhDaiDien;
+            user.TieuSu = request.TieuSu ?? user.TieuSu;
+            user.NgayCapNhat = DateTime.Now;
+
+            _context.NguoiDungs.Update(user);
+            await _context.SaveChangesAsync();
+
+            return new OkObjectResult(new { message = "Cập nhật thông tin thành công." });
         }
     }
 }
