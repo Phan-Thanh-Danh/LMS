@@ -30,6 +30,10 @@ builder.Services.AddScoped<
     backend.Repository.Services.IUserRepository,
     backend.Repository.Repositories.UserRepository
 >();
+builder.Services.AddScoped<
+    backend.Repository.Services.IRoleRepository,
+    backend.Repository.Repositories.RoleRepository
+>();
 
 // Configure Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
