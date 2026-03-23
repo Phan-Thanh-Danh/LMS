@@ -26,6 +26,10 @@ builder.Services.AddScoped<
     backend.Repository.Services.IEmailService,
     backend.Repository.Repositories.EmailService
 >();
+builder.Services.AddScoped<
+    backend.Repository.Services.IUserRepository,
+    backend.Repository.Repositories.UserRepository
+>();
 
 // Configure Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
