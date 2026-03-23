@@ -52,11 +52,11 @@ GO
 --  Danh mục vai trò theo mô hình RBAC
 -- ----------------------------------------------------------------
 CREATE TABLE VaiTro (
-    MaVaiTro    INT             NOT NULL IDENTITY(1,1),
-    TenVaiTro   NVARCHAR(100)   NOT NULL,
-    MoTa        NVARCHAR(500)   NULL,
-    NgayTao     DATETIME        NOT NULL DEFAULT GETDATE(),
-
+    MaVaiTro      INT             NOT NULL IDENTITY(1,1),
+    TenVaiTro     NVARCHAR(100)   NOT NULL,
+    MoTa          NVARCHAR(500)   NULL,
+    DangHoatDong  BIT             NOT NULL DEFAULT 1,
+    NgayTao       DATETIME        NOT NULL DEFAULT GETDATE(),
     CONSTRAINT PK_VaiTro        PRIMARY KEY (MaVaiTro),
     CONSTRAINT UQ_VaiTro_Ten    UNIQUE (TenVaiTro)
 );
