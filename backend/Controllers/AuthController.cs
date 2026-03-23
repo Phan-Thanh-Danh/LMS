@@ -36,5 +36,30 @@ namespace backend.Controllers
 
             return await _authService.LoginAsync(request);
         }
+
+        [HttpPost("verify-email")]
+        public async Task<IActionResult> VerifyEmail([FromBody] VerifyOtpRequest request)
+        {
+            request.Type = "EmailVerify";
+            return await _authService.VerifyOtpAsync(request);
+        }
+
+        [HttpPost("resend-otp")]
+        public async Task<IActionResult> ResendOtp([FromQuery] string email, [FromQuery] string type)
+        {
+            return await _authService.ResendOtpAsync(email, type);
+        }
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+        {
+            return await _authService.ForgotPasswordAsync(request);
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+            return await _authService.ResetPasswordAsync(request);
+        }
     }
 }

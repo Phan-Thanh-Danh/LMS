@@ -13,16 +13,19 @@ namespace backend.Repository.Repositories
         private readonly ApplicationDbContext _context;
         private readonly IConfiguration _configuration;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IEmailService _emailService;
 
         public AuthRepository(
             ApplicationDbContext context,
             IConfiguration configuration,
-            IHttpContextAccessor httpContextAccessor
+            IHttpContextAccessor httpContextAccessor,
+            IEmailService emailService
         )
         {
             _context = context;
             _configuration = configuration;
             _httpContextAccessor = httpContextAccessor;
+            _emailService = emailService;
         }
 
         public async Task<IActionResult> RegisterAsync(RegisterRequest request)
@@ -84,6 +87,22 @@ namespace backend.Repository.Repositories
                 }
 
                 await transaction.CommitAsync();
+
+                // 7. Gửi mã OTP xác thực email
+                var otpCode = new Random().Next(100000, 999999).ToString();
+                var otp = new MaOtp
+                {
+                    MaNguoiDung = user.MaNguoiDung,
+                    GiaTriToken = otpCode,
+                    LoaiToken = "EmailVerify",
+                    HetHanLuc = DateTime.Now.AddMinutes(15),
+                    DaSuDung = false,
+                    NgayTao = DateTime.Now,
+                };
+                _context.MaOtps.Add(otp);
+                await _context.SaveChangesAsync();
+
+                await _emailService.SendOtpEmailAsync(user.Email, otpCode, user.HoTen);
 
                 return new CreatedResult(
                     "",
@@ -184,6 +203,135 @@ namespace backend.Repository.Repositories
                     },
                 }
             );
+        }
+        public async Task<IActionResult> VerifyOtpAsync(VerifyOtpRequest request)
+        {
+            var user = await _context.NguoiDungs.FirstOrDefaultAsync(u => u.Email == request.Email && !u.DaXoa);
+            if (user == null)
+            {
+                return new NotFoundObjectResult(new { message = "Email không tồn tại." });
+            }
+
+            var otp = await _context.MaOtps
+                .Where(o => o.MaNguoiDung == user.MaNguoiDung 
+                         && o.GiaTriToken == request.Code 
+                         && o.LoaiToken == request.Type 
+                         && !o.DaSuDung)
+                .OrderByDescending(o => o.NgayTao)
+                .FirstOrDefaultAsync();
+
+            if (otp == null || otp.HetHanLuc < DateTime.Now)
+            {
+                return new BadRequestObjectResult(new { message = "Mã xác thực không chính xác hoặc đã hết hạn." });
+            }
+
+            otp.DaSuDung = true;
+            _context.MaOtps.Update(otp);
+
+            if (request.Type == "EmailVerify")
+            {
+                user.EmailDaXacThuc = true;
+                _context.NguoiDungs.Update(user);
+            }
+
+            await _context.SaveChangesAsync();
+
+            return new OkObjectResult(new { message = "Xác thực thành công." });
+        }
+
+        public async Task<IActionResult> ForgotPasswordAsync(ForgotPasswordRequest request)
+        {
+            var user = await _context.NguoiDungs.FirstOrDefaultAsync(u => u.Email == request.Email && !u.DaXoa);
+            if (user == null)
+            {
+                // Để bảo mật, không nên cho biết email tồn tại hay không, nhưng ở đây có thể trả về OK
+                return new OkObjectResult(new { message = "Nếu email tồn tại, một mã xác nhận đã được gửi đi." });
+            }
+
+            var otpCode = new Random().Next(100000, 999999).ToString();
+            var otp = new MaOtp
+            {
+                MaNguoiDung = user.MaNguoiDung,
+                GiaTriToken = otpCode,
+                LoaiToken = "PasswordReset",
+                HetHanLuc = DateTime.Now.AddMinutes(15),
+                DaSuDung = false,
+                NgayTao = DateTime.Now,
+            };
+
+            _context.MaOtps.Add(otp);
+            await _context.SaveChangesAsync();
+
+            await _emailService.SendResetPasswordEmailAsync(user.Email, otpCode, user.HoTen);
+
+            return new OkObjectResult(new { message = "Mã xác nhận đã được gửi qua email." });
+        }
+
+        public async Task<IActionResult> ResetPasswordAsync(ResetPasswordRequest request)
+        {
+            var user = await _context.NguoiDungs.FirstOrDefaultAsync(u => u.Email == request.Email && !u.DaXoa);
+            if (user == null)
+            {
+                return new NotFoundObjectResult(new { message = "Email không tồn tại." });
+            }
+
+            var otp = await _context.MaOtps
+                .Where(o => o.MaNguoiDung == user.MaNguoiDung 
+                         && o.GiaTriToken == request.Code 
+                         && o.LoaiToken == "PasswordReset" 
+                         && !o.DaSuDung)
+                .OrderByDescending(o => o.NgayTao)
+                .FirstOrDefaultAsync();
+
+            if (otp == null || otp.HetHanLuc < DateTime.Now)
+            {
+                return new BadRequestObjectResult(new { message = "Mã xác thực không chính xác hoặc đã hết hạn." });
+            }
+
+            var salt = PasswordHelper.GenerateSalt();
+            var hashedPassword = PasswordHelper.HashPassword(request.NewPassword, salt);
+
+            user.MatKhauBam = hashedPassword;
+            user.MuoiMatKhau = salt;
+            user.NgayCapNhat = DateTime.Now;
+            _context.NguoiDungs.Update(user);
+
+            otp.DaSuDung = true;
+            _context.MaOtps.Update(otp);
+
+            await _context.SaveChangesAsync();
+
+            return new OkObjectResult(new { message = "Đặt lại mật khẩu thành công." });
+        }
+
+        public async Task<IActionResult> ResendOtpAsync(string email, string type)
+        {
+            var user = await _context.NguoiDungs.FirstOrDefaultAsync(u => u.Email == email && !u.DaXoa);
+            if (user == null)
+            {
+                return new NotFoundObjectResult(new { message = "Email không tồn tại." });
+            }
+
+            var otpCode = new Random().Next(100000, 999999).ToString();
+            var otp = new MaOtp
+            {
+                MaNguoiDung = user.MaNguoiDung,
+                GiaTriToken = otpCode,
+                LoaiToken = type,
+                HetHanLuc = DateTime.Now.AddMinutes(15),
+                DaSuDung = false,
+                NgayTao = DateTime.Now,
+            };
+
+            _context.MaOtps.Add(otp);
+            await _context.SaveChangesAsync();
+
+            if (type == "EmailVerify")
+                await _emailService.SendOtpEmailAsync(user.Email, otpCode, user.HoTen);
+            else
+                await _emailService.SendResetPasswordEmailAsync(user.Email, otpCode, user.HoTen);
+
+            return new OkObjectResult(new { message = "Mã mới đã được gửi." });
         }
     }
 }

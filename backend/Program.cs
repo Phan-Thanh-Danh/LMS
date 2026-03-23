@@ -16,6 +16,7 @@ builder.Services.AddControllers();
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<backend.Repository.Services.IAuthService, backend.Repository.Repositories.AuthRepository>();
+builder.Services.AddScoped<backend.Repository.Services.IEmailService, backend.Repository.Repositories.EmailService>();
 
 // Configure Authentication (Basic setup for Register/Login logic)
 builder.Services.AddAuthentication();
