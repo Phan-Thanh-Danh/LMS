@@ -341,9 +341,7 @@ namespace backend.Repository.Repositories
 
         public async Task<IActionResult> HardDeleteAsync(Guid id)
         {
-            var user = await _context.NguoiDungs.FirstOrDefaultAsync(u =>
-                u.MaNguoiDung == id
-            );
+            var user = await _context.NguoiDungs.FirstOrDefaultAsync(u => u.MaNguoiDung == id);
 
             if (user == null)
             {
@@ -356,7 +354,11 @@ namespace backend.Repository.Repositories
             if (user.EmailDaXacThuc)
             {
                 return new BadRequestObjectResult(
-                    new { success = false, message = "Chỉ được xóa cứng tài khoản chưa xác thực email." }
+                    new
+                    {
+                        success = false,
+                        message = "Chỉ được xóa cứng tài khoản chưa xác thực email.",
+                    }
                 );
             }
 
@@ -367,23 +369,28 @@ namespace backend.Repository.Repositories
             if (coGiaoDich || coGhiDanh)
             {
                 return new BadRequestObjectResult(
-                    new { success = false, message = "Không thể xóa cứng: tài khoản đã có lịch sử giao dịch hoặc ghi danh. Hãy dùng Xóa mềm." }
+                    new
+                    {
+                        success = false,
+                        message = "Không thể xóa cứng: tài khoản đã có lịch sử giao dịch hoặc ghi danh. Hãy dùng Xóa mềm.",
+                    }
                 );
             }
 
             // Xóa vai trò liên kết trước
-            var roles = await _context.VaiTroNguoiDungs
-                .Where(vr => vr.MaNguoiDung == id).ToListAsync();
+            var roles = await _context
+                .VaiTroNguoiDungs.Where(vr => vr.MaNguoiDung == id)
+                .ToListAsync();
             _context.VaiTroNguoiDungs.RemoveRange(roles);
 
             // Xóa phiên làm việc
-            var sessions = await _context.PhienLamViecs
-                .Where(s => s.MaNguoiDung == id).ToListAsync();
+            var sessions = await _context
+                .PhienLamViecs.Where(s => s.MaNguoiDung == id)
+                .ToListAsync();
             _context.PhienLamViecs.RemoveRange(sessions);
 
             // Xóa OTP
-            var otps = await _context.MaOtps
-                .Where(o => o.MaNguoiDung == id).ToListAsync();
+            var otps = await _context.MaOtps.Where(o => o.MaNguoiDung == id).ToListAsync();
             _context.MaOtps.RemoveRange(otps);
 
             // Xóa vĩnh viễn tài khoản
