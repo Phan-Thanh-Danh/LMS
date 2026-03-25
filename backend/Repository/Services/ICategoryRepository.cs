@@ -9,7 +9,9 @@ namespace backend.Repository.Services
     {
         Task<IEnumerable<DanhMuc>> GetGroupsAsync();
         Task<DanhMuc?> GetGroupByIdAsync(int id);
-        Task<bool> AddGroupAsync(DanhMuc group);
+        Task<IEnumerable<DanhMuc>> GetSubCategoriesAsync(int? parentId = null);
+        Task<DanhMuc?> GetSubCategoryByIdAsync(int id);
+        Task<bool> AddCategoryAsync(DanhMuc category);
         Task<bool> UpdateGroupAsync(DanhMuc group);
         Task<bool> HardDeleteGroupAsync(int id);
         Task<bool> ToggleStatusAsync(int id);

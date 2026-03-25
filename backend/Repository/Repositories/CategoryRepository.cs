@@ -32,11 +32,31 @@ namespace backend.Repository.Repositories
                 .FirstOrDefaultAsync(d => d.MaDanhMuc == id && d.MaDanhMucCha == null && !d.DaXoa);
         }
 
-        public async Task<bool> AddGroupAsync(DanhMuc group)
+        public async Task<IEnumerable<DanhMuc>> GetSubCategoriesAsync(int? parentId = null)
         {
-            group.MaDanhMucCha = null; // Đảm bảo là Nhóm danh mục
-            group.NgayTao = DateTime.Now;
-            _context.DanhMucs.Add(group);
+            var query = _context.DanhMucs
+                .Include(d => d.DanhMucCha)
+                .Where(d => d.MaDanhMucCha != null && !d.DaXoa);
+
+            if (parentId.HasValue)
+            {
+                query = query.Where(d => d.MaDanhMucCha == parentId.Value);
+            }
+
+            return await query.OrderBy(d => d.ThuTuHienThi).ToListAsync();
+        }
+
+        public async Task<DanhMuc?> GetSubCategoryByIdAsync(int id)
+        {
+            return await _context.DanhMucs
+                .Include(d => d.DanhMucCha)
+                .FirstOrDefaultAsync(d => d.MaDanhMuc == id && d.MaDanhMucCha != null && !d.DaXoa);
+        }
+
+        public async Task<bool> AddCategoryAsync(DanhMuc category)
+        {
+            category.NgayTao = DateTime.Now;
+            _context.DanhMucs.Add(category);
             return await _context.SaveChangesAsync() > 0;
         }
 

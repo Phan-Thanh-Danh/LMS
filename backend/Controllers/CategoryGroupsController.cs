@@ -82,11 +82,11 @@ namespace backend.Controllers
                 DuongDanURL = slug,
                 ThuTuHienThi = request.ThuTuHienThi,
                 DuongDanIcon = request.DuongDanIcon,
-                MaDanhMucCha = null,
+                MaDanhMucCha = null, // Vẫn đảm bảo là Nhóm danh mục cấp 1
                 DangHienThi = true
             };
 
-            var success = await _categoryRepository.AddGroupAsync(group);
+            var success = await _categoryRepository.AddCategoryAsync(group);
             if (!success) return StatusCode(500, new { message = "Lỗi khi lưu dữ liệu" });
 
             return CreatedAtAction(nameof(GetCategoryGroup), new { id = group.MaDanhMuc }, new CategoryGroupResponse
