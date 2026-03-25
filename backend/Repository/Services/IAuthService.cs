@@ -14,5 +14,6 @@ namespace backend.Repository.Services
         Task<IActionResult> ChangePasswordAsync(Guid userId, ChangePasswordRequest request);
         Task<IActionResult> GetProfileAsync(Guid userId);
         Task<IActionResult> UpdateProfileAsync(Guid userId, UpdateProfileRequest request);
+        Task<IActionResult> LogoutAsync(LogoutRequest request);
     }
 }

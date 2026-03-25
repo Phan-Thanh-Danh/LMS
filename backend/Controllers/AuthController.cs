@@ -106,5 +106,17 @@ namespace backend.Controllers
             var userId = Guid.Parse(userIdClaim.Value);
             return await _authService.UpdateProfileAsync(userId, request);
         }
+
+        [Authorize]
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout([FromBody] LogoutRequest request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            return await _authService.LogoutAsync(request);
+        }
     }
 }
