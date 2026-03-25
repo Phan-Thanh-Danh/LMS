@@ -12,17 +12,19 @@ namespace backend.Models
 
         [Required]
         [MaxLength(200)]
-        public string TenDanhMuc { get; set; }
+        public string TenDanhMuc { get; set; } = string.Empty;
 
         [Required]
         [MaxLength(200)]
-        public string DuongDanURL { get; set; }
+        public string DuongDanURL { get; set; } = string.Empty;
         public int ThuTuHienThi { get; set; } = 0;
         public bool DangHienThi { get; set; } = true;
 
         [MaxLength(500)]
         public string? DuongDanIcon { get; set; }
         public DateTime NgayTao { get; set; } = DateTime.Now;
+        public DateTime? NgayCapNhat { get; set; }
+        public bool DaXoa { get; set; } = false;
 
         [ForeignKey("MaDanhMucCha")]
         public virtual DanhMuc? DanhMucCha { get; set; }
