@@ -453,5 +453,23 @@ namespace backend.Repository.Repositories
 
             return new OkObjectResult(new { message = "Cập nhật thông tin thành công." });
         }
+
+        public async Task<IActionResult> LogoutAsync(LogoutRequest request)
+        {
+            var session = await _context.PhienLamViecs.FirstOrDefaultAsync(s =>
+                s.TokenLamMoi == request.RefreshToken && !s.DaThuHoi
+            );
+
+            if (session != null)
+            {
+                session.DaThuHoi = true;
+                _context.PhienLamViecs.Update(session);
+                await _context.SaveChangesAsync();
+            }
+
+            // Dù session có tồn tại hay không, hoặc đã thu hồi rồi, ta vẫn trả về OK
+            // để đảm bảo phía client xóa token thành công.
+            return new OkObjectResult(new { success = true, message = "Đăng xuất thành công." });
+        }
     }
 }
