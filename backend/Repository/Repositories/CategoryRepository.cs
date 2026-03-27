@@ -20,22 +20,23 @@ namespace backend.Repository.Repositories
 
         public async Task<IEnumerable<DanhMuc>> GetGroupsAsync()
         {
-            return await _context.DanhMucs
-                .Where(d => d.MaDanhMucCha == null && !d.DaXoa)
+            return await _context
+                .DanhMucs.Where(d => d.MaDanhMucCha == null && !d.DaXoa)
                 .OrderBy(d => d.ThuTuHienThi)
                 .ToListAsync();
         }
 
         public async Task<DanhMuc?> GetGroupByIdAsync(int id)
         {
-            return await _context.DanhMucs
-                .FirstOrDefaultAsync(d => d.MaDanhMuc == id && d.MaDanhMucCha == null && !d.DaXoa);
+            return await _context.DanhMucs.FirstOrDefaultAsync(d =>
+                d.MaDanhMuc == id && d.MaDanhMucCha == null && !d.DaXoa
+            );
         }
 
         public async Task<IEnumerable<DanhMuc>> GetSubCategoriesAsync(int? parentId = null)
         {
-            var query = _context.DanhMucs
-                .Include(d => d.DanhMucCha)
+            var query = _context
+                .DanhMucs.Include(d => d.DanhMucCha)
                 .Where(d => d.MaDanhMucCha != null && !d.DaXoa);
 
             if (parentId.HasValue)
@@ -48,8 +49,8 @@ namespace backend.Repository.Repositories
 
         public async Task<DanhMuc?> GetSubCategoryByIdAsync(int id)
         {
-            return await _context.DanhMucs
-                .Include(d => d.DanhMucCha)
+            return await _context
+                .DanhMucs.Include(d => d.DanhMucCha)
                 .FirstOrDefaultAsync(d => d.MaDanhMuc == id && d.MaDanhMucCha != null && !d.DaXoa);
         }
 
@@ -70,7 +71,8 @@ namespace backend.Repository.Repositories
         public async Task<bool> HardDeleteGroupAsync(int id)
         {
             var group = await _context.DanhMucs.FindAsync(id);
-            if (group == null) return false;
+            if (group == null)
+                return false;
 
             _context.DanhMucs.Remove(group);
             return await _context.SaveChangesAsync() > 0;
@@ -79,7 +81,8 @@ namespace backend.Repository.Repositories
         public async Task<bool> ToggleStatusAsync(int id)
         {
             var group = await _context.DanhMucs.FindAsync(id);
-            if (group == null || group.DaXoa) return false;
+            if (group == null || group.DaXoa)
+                return false;
 
             group.DangHienThi = !group.DangHienThi;
             group.NgayCapNhat = DateTime.Now;
@@ -89,7 +92,7 @@ namespace backend.Repository.Repositories
 
         public async Task<bool> IsSlugUniqueAsync(string slug, int? excludeId = null)
         {
-            return !await _context.DanhMucs.AnyAsync(d => 
+            return !await _context.DanhMucs.AnyAsync(d =>
                 d.DuongDanURL == slug && (!excludeId.HasValue || d.MaDanhMuc != excludeId.Value)
             );
         }

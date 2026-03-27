@@ -16,17 +16,24 @@ namespace backend.Repository.Services
         Task<bool> ToggleCampaignStatusAsync(int id);
 
         // Coupons
-        Task<IEnumerable<GiamGia>> GetCouponsAsync(int? campaignId = null, Guid? instructorId = null);
+        Task<IEnumerable<GiamGia>> GetCouponsAsync(
+            int? campaignId = null,
+            Guid? instructorId = null
+        );
         Task<GiamGia?> GetCouponByCodeAsync(string code);
         Task<bool> AddCouponAsync(GiamGia coupon);
         Task<bool> UpdateCouponAsync(GiamGia coupon);
         Task<bool> DeleteCouponAsync(string code);
         Task<bool> ToggleCouponStatusAsync(string code);
         Task<bool> IsCouponCodeUniqueAsync(string code);
-        
+
         // Validation
-        Task<(bool isValid, string message, decimal discountAmount)> ValidateCouponAsync(string code, decimal orderTotal, List<int>? courseIds = null);
-        
+        Task<(bool isValid, string message, decimal discountAmount)> ValidateCouponAsync(
+            string code,
+            decimal orderTotal,
+            List<int>? courseIds = null
+        );
+
         // Automation
         Task<int> BulkGenerateCouponsAsync(IEnumerable<GiamGia> coupons);
         Task<int> DeactivateExpiredPromotionsAsync();

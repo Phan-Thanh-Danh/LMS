@@ -14,7 +14,10 @@ namespace backend.Services
         private readonly ILogger<PromotionBackgroundService> _logger;
         private readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(5); // Kiểm tra mỗi 5 phút
 
-        public PromotionBackgroundService(IServiceProvider serviceProvider, ILogger<PromotionBackgroundService> logger)
+        public PromotionBackgroundService(
+            IServiceProvider serviceProvider,
+            ILogger<PromotionBackgroundService> logger
+        )
         {
             _serviceProvider = serviceProvider;
             _logger = logger;
@@ -30,14 +33,22 @@ namespace backend.Services
                 {
                     using (var scope = _serviceProvider.CreateScope())
                     {
-                        var promotionRepository = scope.ServiceProvider.GetRequiredService<IPromotionRepository>();
-                        
-                        _logger.LogInformation("Checking for expired promotions at: {time}", DateTimeOffset.Now);
-                        int deactivatedCount = await promotionRepository.DeactivateExpiredPromotionsAsync();
-                        
+                        var promotionRepository =
+                            scope.ServiceProvider.GetRequiredService<IPromotionRepository>();
+
+                        _logger.LogInformation(
+                            "Checking for expired promotions at: {time}",
+                            DateTimeOffset.Now
+                        );
+                        int deactivatedCount =
+                            await promotionRepository.DeactivateExpiredPromotionsAsync();
+
                         if (deactivatedCount > 0)
                         {
-                            _logger.LogInformation("Successfully deactivated {count} expired promotions.", deactivatedCount);
+                            _logger.LogInformation(
+                                "Successfully deactivated {count} expired promotions.",
+                                deactivatedCount
+                            );
                         }
                     }
                 }

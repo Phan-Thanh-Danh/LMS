@@ -45,7 +45,8 @@ namespace backend.Repository.Repositories
         public async Task<bool> DeleteCampaignAsync(int id)
         {
             var campaign = await _context.ChienDichs.FindAsync(id);
-            if (campaign == null) return false;
+            if (campaign == null)
+                return false;
 
             _context.ChienDichs.Remove(campaign);
             return await _context.SaveChangesAsync() > 0;
@@ -54,7 +55,8 @@ namespace backend.Repository.Repositories
         public async Task<bool> ToggleCampaignStatusAsync(int id)
         {
             var campaign = await _context.ChienDichs.FindAsync(id);
-            if (campaign == null) return false;
+            if (campaign == null)
+                return false;
 
             campaign.DangHoatDong = !campaign.DangHoatDong;
             return await _context.SaveChangesAsync() > 0;
@@ -64,13 +66,19 @@ namespace backend.Repository.Repositories
 
         #region Coupons
 
-        public async Task<IEnumerable<GiamGia>> GetCouponsAsync(int? campaignId = null, Guid? instructorId = null)
+        public async Task<IEnumerable<GiamGia>> GetCouponsAsync(
+            int? campaignId = null,
+            Guid? instructorId = null
+        )
         {
-            var query = _context.GiamGias.Include(g => g.ChienDich).Include(g => g.GiangVien).AsQueryable();
+            var query = _context
+                .GiamGias.Include(g => g.ChienDich)
+                .Include(g => g.GiangVien)
+                .AsQueryable();
 
             if (campaignId.HasValue)
                 query = query.Where(g => g.MaChienDich == campaignId.Value);
-            
+
             if (instructorId.HasValue)
                 query = query.Where(g => g.MaGiangVien == instructorId.Value);
 
@@ -79,8 +87,8 @@ namespace backend.Repository.Repositories
 
         public async Task<GiamGia?> GetCouponByCodeAsync(string code)
         {
-            return await _context.GiamGias
-                .Include(g => g.ChienDich)
+            return await _context
+                .GiamGias.Include(g => g.ChienDich)
                 .Include(g => g.GiangVien)
                 .FirstOrDefaultAsync(g => g.MaGiamGia == code);
         }
@@ -100,7 +108,8 @@ namespace backend.Repository.Repositories
         public async Task<bool> DeleteCouponAsync(string code)
         {
             var coupon = await _context.GiamGias.FindAsync(code);
-            if (coupon == null) return false;
+            if (coupon == null)
+                return false;
 
             _context.GiamGias.Remove(coupon);
             return await _context.SaveChangesAsync() > 0;
@@ -109,7 +118,8 @@ namespace backend.Repository.Repositories
         public async Task<bool> ToggleCouponStatusAsync(string code)
         {
             var coupon = await _context.GiamGias.FindAsync(code);
-            if (coupon == null) return false;
+            if (coupon == null)
+                return false;
 
             coupon.DangHoatDong = !coupon.DangHoatDong;
             return await _context.SaveChangesAsync() > 0;
@@ -124,7 +134,11 @@ namespace backend.Repository.Repositories
 
         #region Business Logic & Automation
 
-        public async Task<(bool isValid, string message, decimal discountAmount)> ValidateCouponAsync(string code, decimal orderTotal, List<int>? courseIds = null)
+        public async Task<(
+            bool isValid,
+            string message,
+            decimal discountAmount
+        )> ValidateCouponAsync(string code, decimal orderTotal, List<int>? courseIds = null)
         {
             var coupon = await _context.GiamGias.FindAsync(code);
             if (coupon == null || !coupon.DangHoatDong)
@@ -132,16 +146,27 @@ namespace backend.Repository.Repositories
 
             var now = DateTime.Now;
             if (now < coupon.NgayBatDau)
-                return (false, $"Mã chưa có hiệu lực. Có hiệu lực từ {coupon.NgayBatDau:dd/MM/yyyy}", 0);
-            
+                return (
+                    false,
+                    $"Mã chưa có hiệu lực. Có hiệu lực từ {coupon.NgayBatDau:dd/MM/yyyy}",
+                    0
+                );
+
             if (now > coupon.NgayKetThuc)
                 return (false, "Mã đã hết hạn sử dụng", 0);
 
-            if (coupon.GioiHanLuotDung.HasValue && coupon.SoLuotDaDung >= coupon.GioiHanLuotDung.Value)
+            if (
+                coupon.GioiHanLuotDung.HasValue
+                && coupon.SoLuotDaDung >= coupon.GioiHanLuotDung.Value
+            )
                 return (false, "Mã đã hết lượt sử dụng (Limit reached)", 0);
 
             if (orderTotal < coupon.DonHangToiThieu)
-                return (false, $"Chưa đạt giá trị đơn hàng tối thiểu ({coupon.DonHangToiThieu:N0}đ)", 0);
+                return (
+                    false,
+                    $"Chưa đạt giá trị đơn hàng tối thiểu ({coupon.DonHangToiThieu:N0}đ)",
+                    0
+                );
 
             decimal discount = 0;
             if (coupon.LoaiGiamGia == 1) // Percent
@@ -156,7 +181,8 @@ namespace backend.Repository.Repositories
             }
 
             // Đảm bảo mức giảm không vượt quá tổng tiền
-            if (discount > orderTotal) discount = orderTotal;
+            if (discount > orderTotal)
+                discount = orderTotal;
 
             return (true, "Áp mã thành công", discount);
         }
@@ -172,18 +198,20 @@ namespace backend.Repository.Repositories
             var now = DateTime.Now;
 
             // Hết hạn chiến dịch
-            var expiredCampaigns = await _context.ChienDichs
-                .Where(c => c.DangHoatDong && c.NgayKetThuc < now)
+            var expiredCampaigns = await _context
+                .ChienDichs.Where(c => c.DangHoatDong && c.NgayKetThuc < now)
                 .ToListAsync();
-            
-            foreach (var c in expiredCampaigns) c.DangHoatDong = false;
+
+            foreach (var c in expiredCampaigns)
+                c.DangHoatDong = false;
 
             // Hết hạn mã giảm giá
-            var expiredCoupons = await _context.GiamGias
-                .Where(g => g.DangHoatDong && g.NgayKetThuc < now)
+            var expiredCoupons = await _context
+                .GiamGias.Where(g => g.DangHoatDong && g.NgayKetThuc < now)
                 .ToListAsync();
-                
-            foreach (var g in expiredCoupons) g.DangHoatDong = false;
+
+            foreach (var g in expiredCoupons)
+                g.DangHoatDong = false;
 
             return await _context.SaveChangesAsync();
         }

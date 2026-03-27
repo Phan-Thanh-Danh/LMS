@@ -37,47 +37,66 @@ namespace backend.Controllers
                 TieuDe = s.TieuDe,
                 MoTa = s.MoTa,
                 ThuTu = s.ThuTu,
-                NgayTao = s.NgayTao
+                NgayTao = s.NgayTao,
             });
             return Ok(result);
         }
 
         [HttpPost("courses/{courseId}/sections")]
-        public async Task<IActionResult> CreateSection(Guid courseId, [FromBody] CreateSectionRequest request)
+        public async Task<IActionResult> CreateSection(
+            Guid courseId,
+            [FromBody] CreateSectionRequest request
+        )
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
             var course = await _courseRepository.GetCourseByIdAsync(courseId);
-            if (course == null) return NotFound(new { message = "Không tìm thấy khóa học" });
-            if (!IsOwnerOrAdmin(course)) return Forbid();
-            if (course.TrangThai == 1) return BadRequest(new { message = "Không thể chỉnh sửa khi khóa học đang chờ duyệt" });
+            if (course == null)
+                return NotFound(new { message = "Không tìm thấy khóa học" });
+            if (!IsOwnerOrAdmin(course))
+                return Forbid();
+            if (course.TrangThai == 1)
+                return BadRequest(
+                    new { message = "Không thể chỉnh sửa khi khóa học đang chờ duyệt" }
+                );
 
             var section = new Chuong
             {
                 MaKhoaHoc = courseId,
                 TieuDe = request.TieuDe,
                 MoTa = request.MoTa,
-                ThuTu = request.ThuTu
+                ThuTu = request.ThuTu,
             };
 
             await _courseRepository.AddSectionAsync(section);
-            return CreatedAtAction(nameof(GetSections), new { courseId }, new SectionResponse
-            {
-                MaChuong = section.MaChuong,
-                MaKhoaHoc = section.MaKhoaHoc,
-                TieuDe = section.TieuDe,
-                ThuTu = section.ThuTu,
-                NgayTao = section.NgayTao
-            });
+            return CreatedAtAction(
+                nameof(GetSections),
+                new { courseId },
+                new SectionResponse
+                {
+                    MaChuong = section.MaChuong,
+                    MaKhoaHoc = section.MaKhoaHoc,
+                    TieuDe = section.TieuDe,
+                    ThuTu = section.ThuTu,
+                    NgayTao = section.NgayTao,
+                }
+            );
         }
 
         [HttpPut("sections/{id}")]
-        public async Task<IActionResult> UpdateSection(int id, [FromBody] CreateSectionRequest request)
+        public async Task<IActionResult> UpdateSection(
+            int id,
+            [FromBody] CreateSectionRequest request
+        )
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
             var section = await _courseRepository.GetSectionByIdAsync(id);
-            if (section == null) return NotFound(new { message = "Không tìm thấy chương" });
-            if (!IsOwnerOrAdmin(section.KhoaHoc)) return Forbid();
+            if (section == null)
+                return NotFound(new { message = "Không tìm thấy chương" });
+            if (!IsOwnerOrAdmin(section.KhoaHoc))
+                return Forbid();
 
             section.TieuDe = request.TieuDe;
             section.MoTa = request.MoTa;
@@ -90,8 +109,10 @@ namespace backend.Controllers
         public async Task<IActionResult> DeleteSection(int id)
         {
             var section = await _courseRepository.GetSectionByIdAsync(id);
-            if (section == null) return NotFound(new { message = "Không tìm thấy chương" });
-            if (!IsOwnerOrAdmin(section.KhoaHoc)) return Forbid();
+            if (section == null)
+                return NotFound(new { message = "Không tìm thấy chương" });
+            if (!IsOwnerOrAdmin(section.KhoaHoc))
+                return Forbid();
 
             await _courseRepository.DeleteSectionAsync(id);
             return Ok(new { message = "Đã xóa chương thành công" });
@@ -116,19 +137,25 @@ namespace backend.Controllers
                 DangKhoa = l.DangKhoa,
                 MaTaiNguyen = l.MaTaiNguyen,
                 TrangThaiTaiNguyen = l.TaiNguyenSo?.TrangThai,
-                NgayTao = l.NgayTao
+                NgayTao = l.NgayTao,
             });
             return Ok(result);
         }
 
         [HttpPost("sections/{sectionId}/lectures")]
-        public async Task<IActionResult> CreateLecture(int sectionId, [FromBody] CreateLectureRequest request)
+        public async Task<IActionResult> CreateLecture(
+            int sectionId,
+            [FromBody] CreateLectureRequest request
+        )
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
             var section = await _courseRepository.GetSectionByIdAsync(sectionId);
-            if (section == null) return NotFound(new { message = "Không tìm thấy chương" });
-            if (!IsOwnerOrAdmin(section.KhoaHoc)) return Forbid();
+            if (section == null)
+                return NotFound(new { message = "Không tìm thấy chương" });
+            if (!IsOwnerOrAdmin(section.KhoaHoc))
+                return Forbid();
 
             var lecture = new BaiGiang
             {
@@ -138,22 +165,30 @@ namespace backend.Controllers
                 MoTa = request.MoTa,
                 ThuTu = request.ThuTu,
                 XemMienPhi = request.XemMienPhi,
-                MaTaiNguyen = request.MaTaiNguyen
+                MaTaiNguyen = request.MaTaiNguyen,
             };
 
             await _courseRepository.AddLectureAsync(lecture);
-            return Ok(new { message = "Thêm bài giảng thành công", maBaiGiang = lecture.MaBaiGiang });
+            return Ok(
+                new { message = "Thêm bài giảng thành công", maBaiGiang = lecture.MaBaiGiang }
+            );
         }
 
         [HttpPut("lectures/{id}")]
-        public async Task<IActionResult> UpdateLecture(int id, [FromBody] CreateLectureRequest request)
+        public async Task<IActionResult> UpdateLecture(
+            int id,
+            [FromBody] CreateLectureRequest request
+        )
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
             var lecture = await _courseRepository.GetLectureByIdAsync(id);
-            if (lecture == null) return NotFound(new { message = "Không tìm thấy bài giảng" });
+            if (lecture == null)
+                return NotFound(new { message = "Không tìm thấy bài giảng" });
 
             var section = await _courseRepository.GetSectionByIdAsync(lecture.MaChuong);
-            if (section == null || !IsOwnerOrAdmin(section.KhoaHoc)) return Forbid();
+            if (section == null || !IsOwnerOrAdmin(section.KhoaHoc))
+                return Forbid();
 
             lecture.TieuDe = request.TieuDe;
             lecture.LoaiBaiGiang = request.LoaiBaiGiang;
@@ -169,10 +204,12 @@ namespace backend.Controllers
         public async Task<IActionResult> DeleteLecture(int id)
         {
             var lecture = await _courseRepository.GetLectureByIdAsync(id);
-            if (lecture == null) return NotFound(new { message = "Không tìm thấy bài giảng" });
+            if (lecture == null)
+                return NotFound(new { message = "Không tìm thấy bài giảng" });
 
             var section = await _courseRepository.GetSectionByIdAsync(lecture.MaChuong);
-            if (section == null || !IsOwnerOrAdmin(section.KhoaHoc)) return Forbid();
+            if (section == null || !IsOwnerOrAdmin(section.KhoaHoc))
+                return Forbid();
 
             await _courseRepository.DeleteLectureAsync(id);
             return Ok(new { message = "Đã xóa bài giảng thành công" });
@@ -188,10 +225,12 @@ namespace backend.Controllers
                 return BadRequest(new { message = "Vui lòng chọn file để tải lên" });
 
             var lecture = await _courseRepository.GetLectureByIdAsync(lectureId);
-            if (lecture == null) return NotFound(new { message = "Không tìm thấy bài giảng" });
+            if (lecture == null)
+                return NotFound(new { message = "Không tìm thấy bài giảng" });
 
             var userId = GetCurrentUserId();
-            if (userId == null) return Unauthorized();
+            if (userId == null)
+                return Unauthorized();
 
             // Xác định loại file
             var extension = Path.GetExtension(file.FileName).ToLower();
@@ -201,7 +240,7 @@ namespace backend.Controllers
                 ".pdf" => "PDF",
                 ".jpg" or ".jpeg" or ".png" or ".webp" => "Image",
                 ".zip" or ".rar" => "ZipCode",
-                _ => "Other"
+                _ => "Other",
             };
 
             // Lưu file vào thư mục uploads
@@ -224,7 +263,7 @@ namespace backend.Controllers
                 KieuMIME = file.ContentType,
                 DungLuongByte = file.Length,
                 DuongDanLuuTru = relativePath,
-                TrangThai = loaiTep == "Video" ? "Processing" : "Ready"
+                TrangThai = loaiTep == "Video" ? "Processing" : "Ready",
             };
 
             await _courseRepository.AddMediaAsync(media);
@@ -232,16 +271,18 @@ namespace backend.Controllers
             // Gắn media vào bài giảng
             await _courseRepository.AttachMediaToLectureAsync(lectureId, media.MaTaiNguyen);
 
-            return Ok(new MediaUploadResponse
-            {
-                MaTaiNguyen = media.MaTaiNguyen,
-                TenTep = media.TenTep,
-                LoaiTep = media.LoaiTep,
-                DungLuongByte = media.DungLuongByte,
-                DuongDanLuuTru = media.DuongDanLuuTru,
-                TrangThai = media.TrangThai,
-                NgayTao = media.NgayTao
-            });
+            return Ok(
+                new MediaUploadResponse
+                {
+                    MaTaiNguyen = media.MaTaiNguyen,
+                    TenTep = media.TenTep,
+                    LoaiTep = media.LoaiTep,
+                    DungLuongByte = media.DungLuongByte,
+                    DuongDanLuuTru = media.DuongDanLuuTru,
+                    TrangThai = media.TrangThai,
+                    NgayTao = media.NgayTao,
+                }
+            );
         }
 
         // ── Helpers ───────────────────────────────────────────────
@@ -254,7 +295,8 @@ namespace backend.Controllers
 
         private bool IsOwnerOrAdmin(KhoaHoc course)
         {
-            if (User.IsInRole("Admin") || User.IsInRole("CMO")) return true;
+            if (User.IsInRole("Admin") || User.IsInRole("CMO"))
+                return true;
             var userId = GetCurrentUserId();
             return userId.HasValue && course.MaGiangVien == userId.Value;
         }

@@ -47,7 +47,10 @@ namespace backend.Controllers
         }
 
         [HttpPost("resend-otp")]
-        public async Task<IActionResult> ResendOtp([FromQuery] string email, [FromQuery] string type)
+        public async Task<IActionResult> ResendOtp(
+            [FromQuery] string email,
+            [FromQuery] string type
+        )
         {
             return await _authService.ResendOtpAsync(email, type);
         }
@@ -88,7 +91,8 @@ namespace backend.Controllers
         public async Task<IActionResult> GetProfile()
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (userIdClaim == null) return Unauthorized();
+            if (userIdClaim == null)
+                return Unauthorized();
 
             var userId = Guid.Parse(userIdClaim.Value);
             return await _authService.GetProfileAsync(userId);
@@ -98,10 +102,12 @@ namespace backend.Controllers
         [HttpPut("profile")]
         public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (userIdClaim == null) return Unauthorized();
+            if (userIdClaim == null)
+                return Unauthorized();
 
             var userId = Guid.Parse(userIdClaim.Value);
             return await _authService.UpdateProfileAsync(userId, request);

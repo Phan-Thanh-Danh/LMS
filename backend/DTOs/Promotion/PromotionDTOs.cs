@@ -70,9 +70,10 @@ namespace backend.DTOs.Promotion
     {
         [Required]
         public string Prefix { get; set; } = "COUPON";
+
         [Range(1, 1000)]
         public int Count { get; set; } = 10;
-        
+
         // Cấu hình chung cho lô mã
         public int? MaChienDich { get; set; }
         public int LoaiGiamGia { get; set; }

@@ -69,18 +69,19 @@ namespace backend.DTOs.Course
         public int TongThoiLuong { get; set; }
         public decimal DiemDanhGiaTrungBinh { get; set; }
         public int TongGhiDanh { get; set; }
-        
+
         /// <summary>0=Draft | 1=Pending | 2=Published | 3=Rejected | 4=Archived</summary>
         public int TrangThai { get; set; }
-        public string TrangThaiText => TrangThai switch
-        {
-            0 => "Bản nháp",
-            1 => "Chờ duyệt",
-            2 => "Đã xuất bản",
-            3 => "Bị từ chối",
-            4 => "Lưu trữ",
-            _ => "Không xác định"
-        };
+        public string TrangThaiText =>
+            TrangThai switch
+            {
+                0 => "Bản nháp",
+                1 => "Chờ duyệt",
+                2 => "Đã xuất bản",
+                3 => "Bị từ chối",
+                4 => "Lưu trữ",
+                _ => "Không xác định",
+            };
         public string? GhiChuTuChoi { get; set; }
         public DateTime? XuatBanLuc { get; set; }
         public DateTime NgayTao { get; set; }
@@ -101,15 +102,16 @@ namespace backend.DTOs.Course
         public decimal DiemDanhGiaTrungBinh { get; set; }
         public int TongGhiDanh { get; set; }
         public int TrangThai { get; set; }
-        public string TrangThaiText => TrangThai switch
-        {
-            0 => "Bản nháp",
-            1 => "Chờ duyệt",
-            2 => "Đã xuất bản",
-            3 => "Bị từ chối",
-            4 => "Lưu trữ",
-            _ => "Không xác định"
-        };
+        public string TrangThaiText =>
+            TrangThai switch
+            {
+                0 => "Bản nháp",
+                1 => "Chờ duyệt",
+                2 => "Đã xuất bản",
+                3 => "Bị từ chối",
+                4 => "Lưu trữ",
+                _ => "Không xác định",
+            };
         public DateTime NgayTao { get; set; }
     }
 
