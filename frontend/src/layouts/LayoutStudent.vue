@@ -1,10 +1,27 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
+import api from '@/services/axios'
 
 const authStore = useAuthStore()
 const router = useRouter()
+
+onMounted(async () => {
+  if (authStore.isAuthenticated) {
+    try {
+      const res = await api.get('/Auth/profile')
+      if (res.data) {
+        authStore.updateProfile({
+          name: res.data.hoTen,
+          avatar: res.data.duongDanAnhDaiDien
+        })
+      }
+    } catch (e) {
+      console.error('Failed to sync profile', e)
+    }
+  }
+})
 
 // STU-07: Mega Menu State & Data
 const isMenuOpen = ref(false)
@@ -201,8 +218,9 @@ const handleLogout = () => {
             <span class="absolute -top-1 -right-1 w-2 h-2 bg-error rounded-full"></span>
           </button>
           <div class="group relative">
-            <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-fixed cursor-pointer hover:ring-4 hover:ring-primary/10 transition-all">
-              <img alt="User Profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDEidDb1VqdaeEskLwwEHnq8KXXg2Q5DCyVyAvmJ8UKDM9WPNHy3LVwV7ixaySFtdHLAeYLEkawECHzLkR37GSe4wYv00suwzkFMQ5rjb61H2nipFZ5pTrvlO3Xk-jiJszR1Bp9daAEYO3fbefIUa1AawZN-0aISC4Nop3F9NZXuK-6GVvdxDetV_SZa1XuLHQFSPCbaTu7mEthClMyRjvoIeqP8Ast-sWbIxckQJEYYePYJ_2l-VE98SVdLNgqVo5jpPw7xpVHaQ4"/>
+            <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-fixed cursor-pointer hover:ring-4 hover:ring-primary/10 transition-all bg-gray-100 flex items-center justify-center">
+              <img v-if="authStore.user?.avatar" alt="User Profile" class="w-full h-full object-cover" :src="authStore.user?.avatar"/>
+              <span v-else class="material-symbols-outlined text-gray-400">person</span>
             </div>
             <!-- Simple Dropdown -->
             <div class="absolute right-0 top-full mt-2 w-48 bg-white border border-surface-container rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">

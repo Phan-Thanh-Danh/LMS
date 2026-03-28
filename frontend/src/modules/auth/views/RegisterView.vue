@@ -11,6 +11,7 @@ const password = ref('')
 const confirmPassword = ref('')
 const showPassword = ref(false)
 const agreeTerms = ref(false)
+const role = ref('Student') // Mặc định là học viên
 const isLoading = ref(false)
 const errorMsg = ref('')
 
@@ -31,7 +32,7 @@ const handleRegister = async () => {
     email: email.value,
     password: password.value,
     hoTen: fullName.value,
-    role: 'Student' // Default role for standard registration
+    role: role.value // Dynamic role selection
   })
   
   isLoading.value = false
@@ -125,12 +126,29 @@ const handleRegister = async () => {
                   v-model="password"
                   :type="showPassword ? 'text' : 'password'"
                   class="w-full pl-10 pr-10 py-3 bg-white border border-outline-variant rounded-md focus:ring-2 focus:ring-primary-container outline-none transition-all" 
-                  placeholder="Tối thiểu 8 ký tự" 
+                  placeholder="Tối thiểu 6 ký tự" 
                   required
                 >
                 <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-outline" @click="showPassword = !showPassword">
                   <span class="material-symbols-outlined text-sm">{{ showPassword ? 'visibility_off' : 'visibility' }}</span>
                 </button>
+              </div>
+            </div>
+
+            <!-- Role Selection -->
+            <div class="space-y-2">
+              <label class="block text-sm font-semibold text-slate-700" for="role">Vai trò đăng ký</label>
+              <div class="relative group">
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-sm z-10">badge</span>
+                <select 
+                  id="role" 
+                  v-model="role"
+                  class="w-full pl-10 pr-12 py-3 bg-white border border-outline-variant rounded-md focus:ring-2 focus:ring-primary-container outline-none transition-all appearance-none cursor-pointer text-slate-700"
+                >
+                  <option value="Student">Học viên</option>
+                  <option value="Instructor">Giảng viên</option>
+                </select>
+                <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-outline pointer-events-none transition-colors">expand_more</span>
               </div>
             </div>
 

@@ -20,8 +20,8 @@ export const useAuthStore = defineStore('auth', () => {
         email: response.data.user.email,
         name: response.data.user.hoTen,
         roles: response.data.user.roles,
-        // Fake avatar fallback if not provided
-        avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDEidDb1VqdaeEskLwwEHnq8KXXg2Q5DCyVyAvmJ8UKDM9WPNHy3LVwV7ixaySFtdHLAeYLEkawECHzLkR37GSe4wYv00suwzkFMQ5rjb61H2nipFZ5pTrvlO3Xk-jiJszR1Bp9daAEYO3fbefIUa1AawZN-0aISC4Nop3F9NZXuK-6GVvdxDetV_SZa1XuLHQFSPCbaTu7mEthClMyRjvoIeqP8Ast-sWbIxckQJEYYePYJ_2l-VE98SVdLNgqVo5jpPw7xpVHaQ4'
+        // Sử dụng ảnh thật từ DB, nếu không có mới dùng ảnh mặc định
+        avatar: response.data.user.duongDanAnhDaiDien || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDEidDb1VqdaeEskLwwEHnq8KXXg2Q5DCyVyAvmJ8UKDM9WPNHy3LVwV7ixaySFtdHLAeYLEkawECHzLkR37GSe4wYv00suwzkFMQ5rjb61H2nipFZ5pTrvlO3Xk-jiJszR1Bp9daAEYO3fbefIUa1AawZN-0aISC4Nop3F9NZXuK-6GVvdxDetV_SZa1XuLHQFSPCbaTu7mEthClMyRjvoIeqP8Ast-sWbIxckQJEYYePYJ_2l-VE98SVdLNgqVo5jpPw7xpVHaQ4'
       }
       user.value = userData
       isAuthenticated.value = true
@@ -105,8 +105,16 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const updateProfile = (data) => {
+    if (user.value) {
+      if (data.name) user.value.name = data.name;
+      if (data.avatar) user.value.avatar = data.avatar;
+      localStorage.setItem('user', JSON.stringify(user.value));
+    }
+  }
+
   return { 
     user, isAuthenticated, pendingRegistrationEmail, pendingAction, pendingOtpCode, 
-    login, register, logout, forgotPassword, verifyEmail, resetPassword, resendOtp 
+    login, register, logout, forgotPassword, verifyEmail, resetPassword, resendOtp, updateProfile 
   }
 })

@@ -2,7 +2,9 @@
 import { ref, onMounted } from 'vue'
 import LayoutStudent from '@/layouts/LayoutStudent.vue'
 import api from '@/services/axios'
+import { useAuthStore } from '@/stores/auth'
 
+const authStore = useAuthStore()
 const activeTab = ref('profile')
 const name = ref('')
 const language = ref('Tiếng Việt (Vietnam)')
@@ -10,6 +12,8 @@ const portfolio = ref('')
 const bio = ref('')
 const avatarUrl = ref('https://lh3.googleusercontent.com/aida-public/AB6AXuDEidDb1VqdaeEskLwwEHnq8KXXg2Q5DCyVyAvmJ8UKDM9WPNHy3LVwV7ixaySFtdHLAeYLEkawECHzLkR37GSe4wYv00suwzkFMQ5rjb61H2nipFZ5pTrvlO3Xk-jiJszR1Bp9daAEYO3fbefIUa1AawZN-0aISC4Nop3F9NZXuK-6GVvdxDetV_SZa1XuLHQFSPCbaTu7mEthClMyRjvoIeqP8Ast-sWbIxckQJEYYePYJ_2l-VE98SVdLNgqVo5jpPw7xpVHaQ4')
 const isLoading = ref(false)
+const fileInput = ref(null)
+const selectedFile = ref(null)
 
 onMounted(async () => {
   try {
@@ -26,15 +30,62 @@ onMounted(async () => {
   }
 })
 
+const handleAvatarChange = (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+
+  // Basic validation
+  if (!file.type.startsWith('image/')) {
+    alert('Vui lòng chọn trường dữ liệu là hình ảnh.')
+    return
+  }
+  if (file.size > 5 * 1024 * 1024) { // 5MB limit
+    alert('Kích thước ảnh không được vượt quá 5MB.')
+    return
+  }
+
+  selectedFile.value = file
+
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    avatarUrl.value = e.target.result // Chỉ lưu Base64 để xem trước (Preview)
+  }
+  reader.readAsDataURL(file)
+}
+
 const handleSave = async () => {
   try {
     isLoading.value = true
+    
+    let finalAvatarUrl = avatarUrl.value;
+    
+    // Nếu có file mới được chọn, upload trước
+    if (selectedFile.value) {
+      const formData = new FormData()
+      formData.append('file', selectedFile.value)
+      
+      const uploadRes = await api.post('/Upload/avatar', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      
+      const baseUrl = 'http://localhost:5029' // Cổng Backend tĩnh theo thiết lập
+      finalAvatarUrl = baseUrl + uploadRes.data.url
+    }
+
     await api.put('/Auth/profile', {
       hoTen: name.value,
       tieuSu: bio.value,
-      duongDanAnhDaiDien: avatarUrl.value 
+      duongDanAnhDaiDien: finalAvatarUrl 
     })
+    
+    // Đồng bộ vào Store/LocalStorage để Header nhận diện ảnh mới
+    authStore.updateProfile({
+      name: name.value,
+      avatar: finalAvatarUrl
+    })
+
     alert('Cập nhật hồ sơ thành công!')
+    selectedFile.value = null // Reset file sau khi đã lưu xong
   } catch (err) {
     alert('Cập nhật thất bại: ' + (err.response?.data?.message || 'Lỗi hệ thống'))
   } finally {
@@ -72,10 +123,22 @@ const handleSave = async () => {
           <!-- Avatar Section -->
           <div class="flex items-center gap-8">
             <div class="relative group">
-              <div class="w-24 h-24 rounded-2xl overflow-hidden border-4 border-gray-50 shadow-sm">
-                <img :src="avatarUrl" alt="Avatar" class="w-full h-full object-cover">
+              <div class="w-24 h-24 rounded-2xl overflow-hidden border-4 border-gray-50 shadow-sm relative bg-gray-100 flex items-center justify-center">
+                <img v-if="avatarUrl" :src="avatarUrl" alt="Avatar" class="w-full h-full object-cover">
+                <span v-else class="material-symbols-outlined text-4xl text-gray-300">person</span>
               </div>
-              <button class="absolute -bottom-2 -right-2 w-8 h-8 bg-[#003fb1] text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform border-4 border-white">
+              <input 
+                type="file" 
+                ref="fileInput" 
+                class="hidden" 
+                accept="image/jpeg, image/png, image/gif"
+                @change="handleAvatarChange"
+              >
+              <button 
+                @click="() => fileInput.click()"
+                class="absolute -bottom-2 -right-2 w-8 h-8 bg-[#003fb1] text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform border-4 border-white focus:outline-none"
+                title="Thay ảnh đại diện"
+              >
                 <span class="material-symbols-outlined text-sm">edit</span>
               </button>
             </div>
