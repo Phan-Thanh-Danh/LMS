@@ -1,6 +1,10 @@
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
+const router = useRouter()
+const authStore = useAuthStore()
 const fullName = ref('')
 const email = ref('')
 const password = ref('')
@@ -8,9 +12,17 @@ const confirmPassword = ref('')
 const showPassword = ref(false)
 const agreeTerms = ref(false)
 
-const handleRegister = () => {
+const handleRegister = async () => {
   console.log('Register attempt:', { fullName: fullName.value, email: email.value, password: password.value })
-  // Integration logic here
+  
+  // Set the email in store for the OTP page
+  authStore.pendingRegistrationEmail = email.value
+  
+  // Mock registration delay
+  await new Promise(resolve => setTimeout(resolve, 1000))
+  
+  // Navigate to OTP verification
+  router.push('/verify-otp')
 }
 </script>
 

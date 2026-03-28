@@ -34,11 +34,51 @@ const routes = [
     component: () => import('../modules/auth/views/ResetPasswordView.vue')
   },
   {
-    path: '/dashboard',
+    path: '/student/dashboard',
     name: 'Dashboard',
     component: () => import('../modules/dashboard/views/DashboardView.vue'),
     meta: { requiresAuth: true }
-  }
+  },
+  {
+    path: '/dashboard',
+    redirect: '/student/dashboard'
+  },
+  {
+    path: '/learning',
+    name: 'MyLearning',
+    component: () => import('../modules/learning/views/MyLearningView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/learning/:id/progress',
+    name: 'CourseProgress',
+    component: () => import('../modules/learning/views/CourseProgressView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/learn/:id',
+    name: 'Learn',
+    component: () => import('../modules/learning/views/LearnView.vue'),
+    meta: { requiresAuth: true },
+    children: [
+      {
+        path: ':lessonId',
+        name: 'Lesson',
+        component: () => import('../modules/learning/views/LearnView.vue')
+      },
+        {
+          path: 'quiz/:quizId',
+          name: 'quiz-lesson',
+          component: () => import('../modules/learning/components/learn/QuizLesson.vue')
+        },
+      ]
+    },
+    {
+      path: '/learning/:id/certificate',
+      name: 'certificate',
+      component: () => import('../modules/learning/views/CertificateView.vue'),
+      meta: { requiresAuth: true }
+    },
 ]
 
 const router = createRouter({
