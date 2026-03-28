@@ -7,7 +7,7 @@ const name = ref('Nguyễn Minh Khôi')
 const language = ref('Tiếng Việt (Vietnam)')
 const portfolio = ref('khoinguyen.design')
 const bio = ref('Chuyên viên thiết kế sản phẩm với hơn 5 năm kinh nghiệm. Đang theo đuổi các khóa học về quản trị hệ thống và tư duy chiến lược tại AET LMS.')
-</script>
+</script>// fifai
 
 <template>
   <LayoutStudent>
