@@ -121,4 +121,10 @@ namespace backend.DTOs.Course
         [Required(ErrorMessage = "Lý do từ chối không được để trống")]
         public string GhiChuTuChoi { get; set; } = string.Empty;
     }
+
+    /// <summary>Lý do thao tác (Dành cho Admin/Moderator khi ẩn/xóa khóa học)</summary>
+    public class ModerationActionRequest
+    {
+        public string? LyDo { get; set; }
+    }
 }

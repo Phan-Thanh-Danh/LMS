@@ -22,9 +22,12 @@ namespace backend.Repository.Services
 
         // ── Quản lý vòng đời trạng thái ──────────────────────────
         Task<bool> SubmitForReviewAsync(Guid courseId);
+        Task<bool> ToggleCourseStatusAsync(Guid courseId);
         Task<bool> ApproveCourseAsync(Guid courseId);
         Task<bool> RejectCourseAsync(Guid courseId, string reason);
         Task<bool> ArchiveCourseAsync(Guid courseId);
+        Task<bool> HardDeleteCourseAsync(Guid courseId, string webRootPath);
+        Task<bool> HasEnrollmentsAsync(Guid courseId);
 
         // ── Chương (Sections) ─────────────────────────────────────
         Task<Chuong?> GetSectionByIdAsync(int id);
