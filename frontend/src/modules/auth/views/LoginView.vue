@@ -11,18 +11,25 @@ const password = ref('')
 const showPassword = ref(false)
 const rememberMe = ref(false)
 const errorMsg = ref('')
+const isLoading = ref(false)
 
-const handleLogin = () => {
-  // Mock login check
-  if (emailOrName.value === 'Lộc' && password.value === '123456') {
-    authStore.login({
-      name: 'Lộc',
-      email: 'loc@aet-lms.com',
-      avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDEidDb1VqdaeEskLwwEHnq8KXXg2Q5DCyVyAvmJ8UKDM9WPNHy3LVwV7ixaySFtdHLAeYLEkawECHzLkR37GSe4wYv00suwzkFMQ5rjb61H2nipFZ5pTrvlO3Xk-jiJszR1Bp9daAEYO3fbefIUa1AawZN-0aISC4Nop3F9NZXuK-6GVvdxDetV_SZa1XuLHQFSPCbaTu7mEthClMyRjvoIeqP8Ast-sWbIxckQJEYYePYJ_2l-VE98SVdLNgqVo5jpPw7xpVHaQ4'
-    })
+const handleLogin = async () => {
+  if (!emailOrName.value || !password.value) {
+    errorMsg.value = 'Vui lòng nhập đầy đủ email và mật khẩu.'
+    return
+  }
+
+  isLoading.value = true
+  errorMsg.value = ''
+
+  const result = await authStore.login(emailOrName.value, password.value)
+
+  isLoading.value = false
+
+  if (result.success) {
     router.push('/dashboard')
   } else {
-    errorMsg.value = 'Sai thông tin đăng nhập! (Thử: Lộc / 123456)'
+    errorMsg.value = result.message
   }
 }
 </script>
@@ -162,9 +169,16 @@ const handleLogin = () => {
             </div>
 
             <!-- Submit Button -->
-            <button class="w-full py-3.5 px-4 bg-primary text-white font-bold rounded-md hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group" type="submit">
-              <span>Đăng nhập</span>
-              <span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+            <button 
+              class="w-full py-3.5 px-4 bg-primary text-white font-bold rounded-md hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed" 
+              type="submit"
+              :disabled="isLoading"
+            >
+              <span v-if="isLoading">Đang xử lý...</span>
+              <template v-else>
+                <span>Đăng nhập</span>
+                <span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+              </template>
             </button>
           </form>
 

@@ -11,18 +11,36 @@ const password = ref('')
 const confirmPassword = ref('')
 const showPassword = ref(false)
 const agreeTerms = ref(false)
+const isLoading = ref(false)
+const errorMsg = ref('')
 
 const handleRegister = async () => {
-  console.log('Register attempt:', { fullName: fullName.value, email: email.value, password: password.value })
+  if (password.value.length < 6) {
+    errorMsg.value = 'Mật khẩu phải từ 6 ký tự trở lên.'
+    return
+  }
+  if (!agreeTerms.value) {
+    errorMsg.value = 'Vui lòng đồng ý với Điều khoản và Chính sách.'
+    return
+  }
+
+  isLoading.value = true
+  errorMsg.value = ''
+
+  const result = await authStore.register({
+    email: email.value,
+    password: password.value,
+    hoTen: fullName.value,
+    role: 'Student' // Default role for standard registration
+  })
   
-  // Set the email in store for the OTP page
-  authStore.pendingRegistrationEmail = email.value
+  isLoading.value = false
   
-  // Mock registration delay
-  await new Promise(resolve => setTimeout(resolve, 1000))
-  
-  // Navigate to OTP verification
-  router.push('/verify-otp')
+  if (result.success) {
+    router.push('/verify-otp')
+  } else {
+    errorMsg.value = result.message
+  }
 }
 </script>
 
@@ -116,6 +134,12 @@ const handleRegister = async () => {
               </div>
             </div>
 
+            <!-- Error Message -->
+            <p v-if="errorMsg" class="text-xs text-red-500 font-medium flex items-center gap-1 mt-1">
+              <span class="material-symbols-outlined text-[14px]">error</span>
+              {{ errorMsg }}
+            </p>
+
             <!-- Terms -->
             <div class="flex items-center">
               <input id="terms" v-model="agreeTerms" class="w-4 h-4 text-primary border-outline-variant rounded focus:ring-primary" type="checkbox" required>
@@ -124,9 +148,16 @@ const handleRegister = async () => {
               </label>
             </div>
 
-            <button class="w-full py-3.5 px-4 bg-primary text-white font-bold rounded-md hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group" type="submit">
-              <span>Đăng ký tham gia</span>
-              <span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+            <button 
+              class="w-full py-3.5 px-4 bg-primary text-white font-bold rounded-md hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed" 
+              type="submit"
+              :disabled="isLoading"
+            >
+              <span v-if="isLoading">Đang xử lý...</span>
+              <template v-else>
+                <span>Đăng ký tham gia</span>
+                <span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+              </template>
             </button>
           </form>
 
