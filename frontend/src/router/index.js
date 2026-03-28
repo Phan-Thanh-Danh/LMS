@@ -79,6 +79,24 @@ const routes = [
       component: () => import('../modules/learning/views/CertificateView.vue'),
       meta: { requiresAuth: true }
     },
+    {
+      path: '/cart',
+      name: 'Cart',
+      component: () => import('../modules/cart/views/cart.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/cart-details',
+      name: 'CartDetails',
+      component: () => import('../modules/cart/views/cartdetails.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/profile',
+      name: 'Profile',
+      component: () => import('../modules/users/components/info.vue'),
+      meta: { requiresAuth: true }
+    },
 ]
 
 const router = createRouter({
