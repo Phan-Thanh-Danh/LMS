@@ -38,6 +38,15 @@ builder.Services.AddScoped<
     backend.Repository.Services.ICategoryRepository,
     backend.Repository.Repositories.CategoryRepository
 >();
+builder.Services.AddScoped<
+    backend.Repository.Services.IPromotionRepository,
+    backend.Repository.Repositories.PromotionRepository
+>();
+builder.Services.AddScoped<
+    backend.Repository.Services.ICourseRepository,
+    backend.Repository.Repositories.CourseRepository
+>();
+builder.Services.AddHostedService<backend.Services.PromotionBackgroundService>();
 
 // Configure Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");

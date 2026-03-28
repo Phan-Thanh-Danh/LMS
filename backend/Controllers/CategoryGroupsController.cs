@@ -35,7 +35,7 @@ namespace backend.Controllers
                 DuongDanIcon = g.DuongDanIcon,
                 NgayTao = g.NgayTao,
                 // Giả sử có thêm logic đếm số danh mục con ở đây nếu cần
-                SoDanhMucCon = 0 
+                SoDanhMucCon = 0,
             });
 
             return Ok(response);
@@ -45,30 +45,36 @@ namespace backend.Controllers
         public async Task<ActionResult<CategoryGroupResponse>> GetCategoryGroup(int id)
         {
             var g = await _categoryRepository.GetGroupByIdAsync(id);
-            if (g == null) return NotFound(new { message = "Không tìm thấy nhóm danh mục" });
+            if (g == null)
+                return NotFound(new { message = "Không tìm thấy nhóm danh mục" });
 
-            return Ok(new CategoryGroupResponse
-            {
-                MaDanhMuc = g.MaDanhMuc,
-                TenDanhMuc = g.TenDanhMuc,
-                DuongDanURL = g.DuongDanURL,
-                ThuTuHienThi = g.ThuTuHienThi,
-                DangHienThi = g.DangHienThi,
-                DuongDanIcon = g.DuongDanIcon,
-                NgayTao = g.NgayTao,
-                SoDanhMucCon = 0
-            });
+            return Ok(
+                new CategoryGroupResponse
+                {
+                    MaDanhMuc = g.MaDanhMuc,
+                    TenDanhMuc = g.TenDanhMuc,
+                    DuongDanURL = g.DuongDanURL,
+                    ThuTuHienThi = g.ThuTuHienThi,
+                    DangHienThi = g.DangHienThi,
+                    DuongDanIcon = g.DuongDanIcon,
+                    NgayTao = g.NgayTao,
+                    SoDanhMucCon = 0,
+                }
+            );
         }
 
         [Authorize(Roles = "Admin,CMO")]
         [HttpPost]
-        public async Task<ActionResult<CategoryGroupResponse>> CreateCategoryGroup([FromBody] CreateCategoryGroupRequest request)
+        public async Task<ActionResult<CategoryGroupResponse>> CreateCategoryGroup(
+            [FromBody] CreateCategoryGroupRequest request
+        )
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
             // Tự động tạo Slug nếu trống
-            var slug = string.IsNullOrWhiteSpace(request.DuongDanURL) 
-                ? GenerateSlug(request.TenDanhMuc) 
+            var slug = string.IsNullOrWhiteSpace(request.DuongDanURL)
+                ? GenerateSlug(request.TenDanhMuc)
                 : request.DuongDanURL;
 
             if (!await _categoryRepository.IsSlugUniqueAsync(slug))
@@ -83,35 +89,45 @@ namespace backend.Controllers
                 ThuTuHienThi = request.ThuTuHienThi,
                 DuongDanIcon = request.DuongDanIcon,
                 MaDanhMucCha = null, // Vẫn đảm bảo là Nhóm danh mục cấp 1
-                DangHienThi = true
+                DangHienThi = true,
             };
 
             var success = await _categoryRepository.AddCategoryAsync(group);
-            if (!success) return StatusCode(500, new { message = "Lỗi khi lưu dữ liệu" });
+            if (!success)
+                return StatusCode(500, new { message = "Lỗi khi lưu dữ liệu" });
 
-            return CreatedAtAction(nameof(GetCategoryGroup), new { id = group.MaDanhMuc }, new CategoryGroupResponse
-            {
-                MaDanhMuc = group.MaDanhMuc,
-                TenDanhMuc = group.TenDanhMuc,
-                DuongDanURL = group.DuongDanURL,
-                ThuTuHienThi = group.ThuTuHienThi,
-                DangHienThi = group.DangHienThi,
-                DuongDanIcon = group.DuongDanIcon,
-                NgayTao = group.NgayTao
-            });
+            return CreatedAtAction(
+                nameof(GetCategoryGroup),
+                new { id = group.MaDanhMuc },
+                new CategoryGroupResponse
+                {
+                    MaDanhMuc = group.MaDanhMuc,
+                    TenDanhMuc = group.TenDanhMuc,
+                    DuongDanURL = group.DuongDanURL,
+                    ThuTuHienThi = group.ThuTuHienThi,
+                    DangHienThi = group.DangHienThi,
+                    DuongDanIcon = group.DuongDanIcon,
+                    NgayTao = group.NgayTao,
+                }
+            );
         }
 
         [Authorize(Roles = "Admin,CMO")]
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateCategoryGroup(int id, [FromBody] UpdateCategoryGroupRequest request)
+        public async Task<IActionResult> UpdateCategoryGroup(
+            int id,
+            [FromBody] UpdateCategoryGroupRequest request
+        )
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
             var group = await _categoryRepository.GetGroupByIdAsync(id);
-            if (group == null) return NotFound(new { message = "Không tìm thấy nhóm danh mục" });
+            if (group == null)
+                return NotFound(new { message = "Không tìm thấy nhóm danh mục" });
 
-            var slug = string.IsNullOrWhiteSpace(request.DuongDanURL) 
-                ? GenerateSlug(request.TenDanhMuc) 
+            var slug = string.IsNullOrWhiteSpace(request.DuongDanURL)
+                ? GenerateSlug(request.TenDanhMuc)
                 : request.DuongDanURL;
 
             if (!await _categoryRepository.IsSlugUniqueAsync(slug, id))
@@ -126,7 +142,8 @@ namespace backend.Controllers
             group.DuongDanIcon = request.DuongDanIcon;
 
             var success = await _categoryRepository.UpdateGroupAsync(group);
-            if (!success) return StatusCode(500, new { message = "Lỗi khi cập nhật dữ liệu" });
+            if (!success)
+                return StatusCode(500, new { message = "Lỗi khi cập nhật dữ liệu" });
 
             return Ok(new { message = "Cập nhật thành công" });
         }
@@ -136,7 +153,8 @@ namespace backend.Controllers
         public async Task<IActionResult> ToggleCategoryGroupStatus(int id)
         {
             var success = await _categoryRepository.ToggleStatusAsync(id);
-            if (!success) return NotFound(new { message = "Không tìm thấy nhóm danh mục" });
+            if (!success)
+                return NotFound(new { message = "Không tìm thấy nhóm danh mục" });
 
             return Ok(new { message = "Đã cập nhật trạng thái hiển thị" });
         }
@@ -148,17 +166,25 @@ namespace backend.Controllers
             // Kiểm tra ràng buộc: Có con không?
             if (await _categoryRepository.HasChildrenAsync(id))
             {
-                return Conflict(new { message = "Không thể xóa nhóm đang có danh mục con. Hãy xóa các danh mục con trước." });
+                return Conflict(
+                    new
+                    {
+                        message = "Không thể xóa nhóm đang có danh mục con. Hãy xóa các danh mục con trước.",
+                    }
+                );
             }
 
             // Kiểm tra ràng buộc: Có khóa học không?
             if (await _categoryRepository.HasCoursesAsync(id))
             {
-                return Conflict(new { message = "Không thể xóa nhóm đang có khóa học trực thuộc." });
+                return Conflict(
+                    new { message = "Không thể xóa nhóm đang có khóa học trực thuộc." }
+                );
             }
 
             var success = await _categoryRepository.HardDeleteGroupAsync(id);
-            if (!success) return NotFound(new { message = "Không tìm thấy nhóm danh mục" });
+            if (!success)
+                return NotFound(new { message = "Không tìm thấy nhóm danh mục" });
 
             return Ok(new { message = "Xóa cứng nhóm danh mục thành công" });
         }
