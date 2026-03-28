@@ -19,5 +19,7 @@ namespace backend.Models
 
         [ForeignKey("MaKhoaHoc")]
         public virtual KhoaHoc KhoaHoc { get; set; }
+
+        public virtual ICollection<BaiGiang> BaiGiangs { get; set; } = new List<BaiGiang>();
     }
 }

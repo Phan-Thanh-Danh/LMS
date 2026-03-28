@@ -58,5 +58,7 @@ namespace backend.Models
 
         [ForeignKey("MaVideoGioiThieu")]
         public virtual TaiNguyenSo? VideoGioiThieu { get; set; }
+
+        public virtual ICollection<Chuong> Chuongs { get; set; } = new List<Chuong>();
     }
 }

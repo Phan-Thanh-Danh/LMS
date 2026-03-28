@@ -15,10 +15,18 @@ namespace backend.Controllers
     public class CoursesController : ControllerBase
     {
         private readonly ICourseRepository _courseRepository;
+        private readonly IWebHostEnvironment _env;
+        private readonly IEmailService _emailService;
 
-        public CoursesController(ICourseRepository courseRepository)
+        public CoursesController(
+            ICourseRepository courseRepository,
+            IWebHostEnvironment env,
+            IEmailService emailService
+        )
         {
             _courseRepository = courseRepository;
+            _env = env;
+            _emailService = emailService;
         }
 
         // ── Danh sách công khai ────────────────────────────────────
@@ -268,6 +276,129 @@ namespace backend.Controllers
             if (!success)
                 return NotFound(new { message = "Không tìm thấy khóa học" });
             return Ok(new { message = "Đã lưu trữ khóa học" });
+        }
+
+        /// <summary>Vô hiệu hóa/Kích hoạt lại khóa học (Toggle Status)</summary>
+        [Authorize(Roles = "Admin,CMO,Moderator,Instructor")]
+        [HttpPatch("{id}/status")]
+        public async Task<IActionResult> ToggleCourseStatus(
+            Guid id,
+            [FromBody] ModerationActionRequest? request = null
+        )
+        {
+            var course = await _courseRepository.GetCourseByIdAsync(id);
+            if (course == null)
+                return NotFound(new { message = "Không tìm thấy khóa học" });
+
+            var currentUserId = GetCurrentUserId();
+            bool isOwner = currentUserId != null && course.MaGiangVien == currentUserId;
+
+            // Nếu người gọi là Giảng viên nhưng không phải chủ sở hữu -> cấm
+            if (User.IsInRole("Instructor") && !isOwner)
+            {
+                // Ngoại trừ trường hợp họ vừa có quyền Instructor vừa có quyền Admin/Moderator
+                if (!User.IsInRole("Admin") && !User.IsInRole("Moderator") && !User.IsInRole("CMO"))
+                    return Forbid();
+            }
+
+            // Lưu trạng thái trước đó để kiểm tra việc ẩn
+            bool wasPublished = course.TrangThai == 2;
+
+            var success = await _courseRepository.ToggleCourseStatusAsync(id);
+            if (!success)
+                return NotFound(new { message = "Không tìm thấy khóa học" });
+
+            // Nếu khóa học bị vô hiệu hóa bởi Admin/Kiểm duyệt (không phải chủ sở hữu làm)
+            if (wasPublished && !isOwner && course.GiangVien != null)
+            {
+                var reasonText = string.IsNullOrWhiteSpace(request?.LyDo)
+                    ? "Vi phạm chính sách nội dung hoặc bản quyền"
+                    : request.LyDo;
+
+                var body =
+                    $@"
+                    <h3>Thông báo hệ thống</h3>
+                    <p>Chào {course.GiangVien.HoTen},</p>
+                    <p>Khóa học <strong>{course.TieuDe}</strong> của bạn đã bị vô hiệu hóa/ẩn khỏi danh sách hiển thị.</p>
+                    <p><strong>Lý do:</strong> {reasonText}</p>
+                    <p>Vui lòng liên hệ với bộ phận hỗ trợ để biết thêm chi tiết.</p>";
+
+                await _emailService.SendEmailAsync(
+                    course.GiangVien.Email,
+                    "[LMS] Khóa học của bạn đã bị vô hiệu hóa",
+                    body
+                );
+            }
+
+            return Ok(new { message = "Đã thay đổi trạng thái khóa học" });
+        }
+
+        /// <summary>Xóa cứng khóa học</summary>
+        [Authorize(Roles = "Admin,Moderator,Instructor")]
+        [HttpDelete("{id}/hard")]
+        public async Task<IActionResult> HardDeleteCourse(
+            Guid id,
+            [FromBody] ModerationActionRequest? request = null
+        )
+        {
+            var course = await _courseRepository.GetCourseByIdAsync(id);
+            if (course == null)
+                return NotFound(new { message = "Không tìm thấy khóa học" });
+
+            var currentUserId = GetCurrentUserId();
+            bool isOwner = currentUserId != null && course.MaGiangVien == currentUserId;
+
+            if (User.IsInRole("Instructor") && !isOwner)
+            {
+                if (!User.IsInRole("Admin") && !User.IsInRole("Moderator"))
+                    return Forbid();
+            }
+
+            var hasEnrollments = await _courseRepository.HasEnrollmentsAsync(id);
+            if (hasEnrollments)
+                return BadRequest(
+                    new
+                    {
+                        message = "Không thể xóa cứng khóa học đã có học viên đăng ký. Vui lòng chuyển sang trạng thái Lưu trữ (Archive) thay vì xóa cứng.",
+                    }
+                );
+
+            var webRootPath = _env.WebRootPath ?? "wwwroot";
+            var success = await _courseRepository.HardDeleteCourseAsync(id, webRootPath);
+
+            if (!success)
+                return BadRequest(
+                    new
+                    {
+                        message = "Không thể xóa cứng khóa học này. Có thể do lỗi dữ liệu kết nối.",
+                    }
+                );
+
+            // Gửi email báo cho Giảng viên nếu Admin/Kiểm duyệt viên tự ý xóa
+            if (!isOwner && course.GiangVien != null)
+            {
+                var reasonText = string.IsNullOrWhiteSpace(request?.LyDo)
+                    ? "Vi phạm nghiêm trọng chính sách nội dung và quy định của nền tảng"
+                    : request.LyDo;
+
+                var body =
+                    $@"
+                    <h3>Thông báo hệ thống</h3>
+                    <p>Chào {course.GiangVien.HoTen},</p>
+                    <p>Khóa học <strong>{course.TieuDe}</strong> của bạn đã bị bộ phận Quản trị/Kiểm duyệt xóa vĩnh viễn khỏi hệ thống.</p>
+                    <p><strong>Lý do:</strong> {reasonText}</p>
+                    <p>Mọi thắc mắc vui lòng liên hệ bộ phận hỗ trợ.</p>";
+
+                await _emailService.SendEmailAsync(
+                    course.GiangVien.Email,
+                    "[LMS] Khóa học của bạn đã bị xóa vĩnh viễn",
+                    body
+                );
+            }
+
+            return Ok(
+                new { message = "Đã xóa cứng khóa học và toàn bộ học liệu liên quan vĩnh viễn" }
+            );
         }
 
         // ── Helpers ───────────────────────────────────────────────

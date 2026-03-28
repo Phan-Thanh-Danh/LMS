@@ -146,6 +146,86 @@ namespace backend.Repository.Repositories
             return await _context.SaveChangesAsync() > 0;
         }
 
+        public async Task<bool> ToggleCourseStatusAsync(Guid courseId)
+        {
+            var course = await _context.KhoaHocs.FindAsync(courseId);
+            if (course == null) return false;
+
+            // Toggle between Draft (0) and Published (2) assuming simple toggle, or Unpublish
+            if (course.TrangThai == 2)
+                course.TrangThai = 0; // Unpublish -> Draft
+            else if (course.TrangThai == 0 || course.TrangThai == 3 || course.TrangThai == 4)
+                course.TrangThai = 2; // Publish
+
+            course.NgayCapNhat = DateTime.Now;
+            return await _context.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> HasEnrollmentsAsync(Guid courseId)
+        {
+            return await _context.GhiDanhs.AnyAsync(g => g.MaKhoaHoc == courseId);
+        }
+
+        public async Task<bool> HardDeleteCourseAsync(Guid courseId, string webRootPath)
+        {
+            // Begin transaction for safety
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var course = await _context.KhoaHocs
+                    .Include(c => c.Chuongs)
+                        .ThenInclude(ch => ch.BaiGiangs)
+                            .ThenInclude(b => b.TaiNguyenSo)
+                    .FirstOrDefaultAsync(c => c.MaKhoaHoc == courseId);
+
+                if (course == null) return false;
+
+                // Collect all files to delete
+                var filesToDelete = new List<string>();
+                
+                // Add course thumbnail to delete list if it's local
+                if (!string.IsNullOrEmpty(course.DuongDanAnhDaiDien) && !course.DuongDanAnhDaiDien.StartsWith("http"))
+                {
+                    filesToDelete.Add(System.IO.Path.Combine(webRootPath, course.DuongDanAnhDaiDien.TrimStart('/')));
+                }
+
+                foreach (var chuong in course.Chuongs)
+                {
+                    foreach (var baiGiang in chuong.BaiGiangs)
+                    {
+                        if (baiGiang.TaiNguyenSo != null)
+                        {
+                            var resourceFile = System.IO.Path.Combine(webRootPath, baiGiang.TaiNguyenSo.DuongDanLuuTru.TrimStart('/'));
+                            filesToDelete.Add(resourceFile);
+                            _context.TaiNguyenSos.Remove(baiGiang.TaiNguyenSo);
+                        }
+                    }
+                }
+
+                // Delete the course (cascading will delete Chuong and BaiGiang if configured, otherwise remove them explicitly)
+                _context.KhoaHocs.Remove(course);
+                await _context.SaveChangesAsync();
+                
+                await transaction.CommitAsync();
+
+                // Delete physical files after successful DB transaction
+                foreach (var file in filesToDelete)
+                {
+                    if (System.IO.File.Exists(file))
+                    {
+                        try { System.IO.File.Delete(file); } catch { /* Log error potentially */ }
+                    }
+                }
+
+                return true;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                return false;
+            }
+        }
+
         // ── Chương (Sections) ─────────────────────────────────────
 
         public async Task<Chuong?> GetSectionByIdAsync(int id) =>
