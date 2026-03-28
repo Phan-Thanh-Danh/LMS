@@ -1,13 +1,47 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import LayoutStudent from '@/layouts/LayoutStudent.vue'
+import api from '@/services/axios'
 
 const activeTab = ref('profile')
-const name = ref('Nguyễn Minh Khôi')
+const name = ref('')
 const language = ref('Tiếng Việt (Vietnam)')
-const portfolio = ref('khoinguyen.design')
-const bio = ref('Chuyên viên thiết kế sản phẩm với hơn 5 năm kinh nghiệm. Đang theo đuổi các khóa học về quản trị hệ thống và tư duy chiến lược tại AET LMS.')
-</script>// fifai
+const portfolio = ref('')
+const bio = ref('')
+const avatarUrl = ref('https://lh3.googleusercontent.com/aida-public/AB6AXuDEidDb1VqdaeEskLwwEHnq8KXXg2Q5DCyVyAvmJ8UKDM9WPNHy3LVwV7ixaySFtdHLAeYLEkawECHzLkR37GSe4wYv00suwzkFMQ5rjb61H2nipFZ5pTrvlO3Xk-jiJszR1Bp9daAEYO3fbefIUa1AawZN-0aISC4Nop3F9NZXuK-6GVvdxDetV_SZa1XuLHQFSPCbaTu7mEthClMyRjvoIeqP8Ast-sWbIxckQJEYYePYJ_2l-VE98SVdLNgqVo5jpPw7xpVHaQ4')
+const isLoading = ref(false)
+
+onMounted(async () => {
+  try {
+    const res = await api.get('/Auth/profile')
+    if (res.data) {
+      name.value = res.data.hoTen || ''
+      bio.value = res.data.tieuSu || ''
+      if (res.data.duongDanAnhDaiDien) {
+        avatarUrl.value = res.data.duongDanAnhDaiDien
+      }
+    }
+  } catch (err) {
+    console.error('Không thể tải hồ sơ:', err)
+  }
+})
+
+const handleSave = async () => {
+  try {
+    isLoading.value = true
+    await api.put('/Auth/profile', {
+      hoTen: name.value,
+      tieuSu: bio.value,
+      duongDanAnhDaiDien: avatarUrl.value 
+    })
+    alert('Cập nhật hồ sơ thành công!')
+  } catch (err) {
+    alert('Cập nhật thất bại: ' + (err.response?.data?.message || 'Lỗi hệ thống'))
+  } finally {
+    isLoading.value = false
+  }
+}
+</script>
 
 <template>
   <LayoutStudent>
@@ -39,7 +73,7 @@ const bio = ref('Chuyên viên thiết kế sản phẩm với hơn 5 năm kinh 
           <div class="flex items-center gap-8">
             <div class="relative group">
               <div class="w-24 h-24 rounded-2xl overflow-hidden border-4 border-gray-50 shadow-sm">
-                <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDEidDb1VqdaeEskLwwEHnq8KXXg2Q5DCyVyAvmJ8UKDM9WPNHy3LVwV7ixaySFtdHLAeYLEkawECHzLkR37GSe4wYv00suwzkFMQ5rjb61H2nipFZ5pTrvlO3Xk-jiJszR1Bp9daAEYO3fbefIUa1AawZN-0aISC4Nop3F9NZXuK-6GVvdxDetV_SZa1XuLHQFSPCbaTu7mEthClMyRjvoIeqP8Ast-sWbIxckQJEYYePYJ_2l-VE98SVdLNgqVo5jpPw7xpVHaQ4" alt="Avatar" class="w-full h-full object-cover">
+                <img :src="avatarUrl" alt="Avatar" class="w-full h-full object-cover">
               </div>
               <button class="absolute -bottom-2 -right-2 w-8 h-8 bg-[#003fb1] text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform border-4 border-white">
                 <span class="material-symbols-outlined text-sm">edit</span>
@@ -87,9 +121,14 @@ const bio = ref('Chuyên viên thiết kế sản phẩm với hơn 5 năm kinh 
           <!-- Buttons -->
           <div class="flex justify-end items-center gap-6 pt-6 border-t border-gray-50">
             <button class="text-sm font-black text-[#003fb1] hover:underline">Hủy bỏ</button>
-            <button class="bg-[#2d4aa5] text-white px-10 py-4 rounded-xl text-sm font-black hover:bg-[#003fb1] hover:-translate-y-1 shadow-lg shadow-blue-500/20 active:scale-95 transition-all flex items-center gap-3">
-              <span class="material-symbols-outlined text-xl">save</span>
-              Lưu thay đổi
+            <button 
+              @click="handleSave"
+              :disabled="isLoading"
+              class="bg-[#2d4aa5] text-white px-10 py-4 rounded-xl text-sm font-black hover:bg-[#003fb1] hover:-translate-y-1 shadow-lg shadow-blue-500/20 active:scale-95 transition-all flex items-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+            >
+              <span v-if="isLoading" class="material-symbols-outlined text-xl animate-spin">progress_activity</span>
+              <span v-else class="material-symbols-outlined text-xl">save</span>
+              {{ isLoading ? 'Đang lưu...' : 'Lưu thay đổi' }}
             </button>
           </div>
 
