@@ -193,7 +193,9 @@ const handleLogout = () => {
         <!-- Action Icons & Avatar -->
         <div class="flex items-center gap-5">
           <button class="hover:text-primary transition-all active:scale-95"><span class="material-symbols-outlined">favorite</span></button>
-          <button class="hover:text-primary transition-all active:scale-95"><span class="material-symbols-outlined">shopping_cart</span></button>
+          <router-link to="/cart" class="hover:text-primary transition-all active:scale-95">
+            <span class="material-symbols-outlined font-bold text-[#003fb1]">shopping_cart</span>
+          </router-link>
           <button class="relative hover:text-primary transition-all active:scale-95">
             <span class="material-symbols-outlined">notifications</span>
             <span class="absolute -top-1 -right-1 w-2 h-2 bg-error rounded-full"></span>
@@ -205,10 +207,13 @@ const handleLogout = () => {
             <!-- Simple Dropdown -->
             <div class="absolute right-0 top-full mt-2 w-48 bg-white border border-surface-container rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
                <div class="p-4 border-b border-surface-container">
+                <router-link to="/profile" class="block hover:text-primary transition-colors">
                   <p class="font-bold text-sm">{{ authStore.user?.name || 'User' }}</p>
                   <p class="text-xs text-on-surface-variant">{{ authStore.user?.email || 'user@example.com' }}</p>
-               </div>
-               <button @click="handleLogout" class="w-full text-left p-3 text-sm text-error hover:bg-error/5 transition-colors">Đăng xuất</button>
+                </router-link>
+            </div>
+            <router-link to="/profile" class="w-full text-left p-3 text-sm text-on-surface hover:bg-surface-container-low transition-colors block border-b border-surface-container">Hồ sơ cá nhân</router-link>
+            <button @click="handleLogout" class="w-full text-left p-3 text-sm text-error hover:bg-error/5 transition-colors">Đăng xuất</button>
             </div>
           </div>
         </div>

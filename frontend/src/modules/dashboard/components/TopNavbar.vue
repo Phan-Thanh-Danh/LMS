@@ -24,6 +24,11 @@ const handleLogout = () => {
 
     <!-- Actions -->
     <div class="flex items-center gap-6">
+      <router-link to="/cart" class="relative p-2 text-gray-500 hover:text-primary hover:bg-primary/5 rounded-full transition-all">
+        <span class="material-symbols-outlined">shopping_cart</span>
+        <span class="absolute top-2 right-2 w-4 h-4 bg-primary text-white flex items-center justify-center rounded-full text-[10px] font-bold">2</span>
+      </router-link>
+
       <button class="relative p-2 text-gray-500 hover:text-primary hover:bg-primary/5 rounded-full transition-all">
         <span class="material-symbols-outlined">notifications</span>
         <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
@@ -52,9 +57,9 @@ const handleLogout = () => {
             <p class="text-[10px] text-gray-500 truncate font-bold">{{ authStore.user?.email }}</p>
           </div>
           <div class="py-2">
-            <button class="w-full flex items-center gap-3 px-4 py-2 text-sm font-bold text-gray-600 hover:bg-primary/5 hover:text-primary rounded-lg transition-colors">
+            <router-link to="/profile" class="w-full flex items-center gap-3 px-4 py-2 text-sm font-bold text-gray-600 hover:bg-primary/5 hover:text-primary rounded-lg transition-colors">
               <span class="material-symbols-outlined text-lg">person</span> Hồ sơ của tôi
-            </button>
+            </router-link>
             <button class="w-full flex items-center gap-3 px-4 py-2 text-sm font-bold text-gray-600 hover:bg-primary/5 hover:text-primary rounded-lg transition-colors">
               <span class="material-symbols-outlined text-lg">workspace_premium</span> Chứng chỉ
             </button>
