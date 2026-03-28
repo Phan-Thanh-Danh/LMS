@@ -1,14 +1,29 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
 const email = ref('')
+const isLoading = ref(false)
+const errorMsg = ref('')
 
-const handleSubmit = () => {
-  // Mock: send OTP and navigate to verify
-  console.log('Sending OTP to:', email.value)
-  router.push('/verify-otp')
+const handleSubmit = async () => {
+  if (!email.value) return
+  
+  isLoading.value = true
+  errorMsg.value = ''
+  
+  const result = await authStore.forgotPassword(email.value)
+  
+  isLoading.value = false
+  
+  if (result.success) {
+    router.push('/verify-otp')
+  } else {
+    errorMsg.value = result.message
+  }
 }
 </script>
 
@@ -54,11 +69,22 @@ const handleSubmit = () => {
                   type="email"
                 >
               </div>
+              <p v-if="errorMsg" class="text-xs text-red-500 font-medium flex items-center gap-1 mt-1">
+                <span class="material-symbols-outlined text-[14px]">error</span>
+                {{ errorMsg }}
+              </p>
             </div>
             <!-- Action Button -->
-            <button class="w-full bg-primary hover:bg-primary-container text-white font-bold py-3.5 px-6 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 group shadow-lg shadow-primary/20 active:scale-95" type="submit">
-              <span>Gửi mã xác thực</span>
-              <span class="material-symbols-outlined text-[20px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+            <button 
+              class="w-full bg-primary hover:bg-primary-container text-white font-bold py-3.5 px-6 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 group shadow-lg shadow-primary/20 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed" 
+              type="submit"
+              :disabled="isLoading"
+            >
+              <span v-if="isLoading">Đang xử lý...</span>
+              <template v-else>
+                <span>Gửi mã xác thực</span>
+                <span class="material-symbols-outlined text-[20px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+              </template>
             </button>
           </form>
           <div class="mt-8 pt-6 border-t border-surface-container-low text-center">

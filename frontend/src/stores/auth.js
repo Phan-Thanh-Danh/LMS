@@ -6,6 +6,8 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref(JSON.parse(localStorage.getItem('user')) || null)
   const isAuthenticated = ref(!!user.value)
   const pendingRegistrationEmail = ref('')
+  const pendingAction = ref('register') // 'register' or 'forgot-password'
+  const pendingOtpCode = ref('')
 
   const login = async (email, password) => {
     try {
@@ -40,6 +42,7 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await api.post('/Auth/register', userData)
       // Save email to state so VerifyOTP can use it
       pendingRegistrationEmail.value = response.data.email || userData.email
+      pendingAction.value = 'register'
       return { success: true, data: response.data }
     } catch (error) {
       console.error('Registration error:', error)
@@ -54,8 +57,56 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
     isAuthenticated.value = false
     localStorage.removeItem('user')
-    // Option: call backend logout here using token if needed
   }
 
-  return { user, isAuthenticated, pendingRegistrationEmail, login, register, logout }
+  const forgotPassword = async (email) => {
+    try {
+      const response = await api.post('/Auth/forgot-password', { email })
+      pendingRegistrationEmail.value = email
+      pendingAction.value = 'forgot-password'
+      return { success: true, message: response.data?.message }
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || 'Có lỗi xảy ra khi gửi yêu cầu' }
+    }
+  }
+
+  const verifyEmail = async (code) => {
+    try {
+      await api.post('/Auth/verify-email', { 
+        email: pendingRegistrationEmail.value, 
+        code 
+      })
+      return { success: true }
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || 'Mã xác thực không chính xác' }
+    }
+  }
+
+  const resetPassword = async (newPassword) => {
+    try {
+      const response = await api.post('/Auth/reset-password', { 
+        email: pendingRegistrationEmail.value, 
+        code: pendingOtpCode.value, 
+        newPassword 
+      })
+      return { success: true, message: response.data?.message }
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || 'Không thể đặt lại mật khẩu' }
+    }
+  }
+
+  const resendOtp = async () => {
+    try {
+      const type = pendingAction.value === 'register' ? 'EmailVerify' : 'PasswordReset'
+      await api.post(`/Auth/resend-otp?email=${pendingRegistrationEmail.value}&type=${type}`)
+      return { success: true }
+    } catch (error) {
+      return { success: false, message: 'Lỗi khi gửi lại OTP' }
+    }
+  }
+
+  return { 
+    user, isAuthenticated, pendingRegistrationEmail, pendingAction, pendingOtpCode, 
+    login, register, logout, forgotPassword, verifyEmail, resetPassword, resendOtp 
+  }
 })

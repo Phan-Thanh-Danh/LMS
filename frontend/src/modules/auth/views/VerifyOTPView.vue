@@ -9,20 +9,22 @@ const digits = ref(['', '', '', '', '', ''])
 const inputRefs = ref([])
 const isVerifying = ref(false)
 const isSuccess = ref(false)
+const errorMsg = ref('')
 
 onMounted(() => {
-  // Focus first input
   if (inputRefs.value[0]) inputRefs.value[0].focus()
 })
 
 const handleInput = (index, event) => {
   const value = event.target.value
+  errorMsg.value = ''
   if (value && index < 5) {
     inputRefs.value[index + 1].focus()
   }
 }
 
 const handleKeyDown = (index, event) => {
+  errorMsg.value = ''
   if (event.key === 'Backspace' && !digits.value[index] && index > 0) {
     inputRefs.value[index - 1].focus()
   }
@@ -33,15 +35,34 @@ const handleSubmit = async () => {
   if (otp.length < 6) return
   
   isVerifying.value = true
-  // Mock API call for verification
-  await new Promise(resolve => setTimeout(resolve, 2000))
-  
-  isVerifying.value = false
-  isSuccess.value = true
+  errorMsg.value = ''
+
+  if (authStore.pendingAction === 'forgot-password') {
+    authStore.pendingOtpCode = otp
+    isVerifying.value = false
+    router.push('/reset-password')
+  } else {
+    const result = await authStore.verifyEmail(otp)
+    isVerifying.value = false
+    
+    if (result.success) {
+      isSuccess.value = true
+    } else {
+      errorMsg.value = result.message
+    }
+  }
 }
 
-const resendOTP = () => {
-  console.log('Resending OTP to:', authStore.pendingRegistrationEmail)
+const resendOTP = async () => {
+  isVerifying.value = true
+  errorMsg.value = ''
+  const result = await authStore.resendOtp()
+  isVerifying.value = false
+  if (result.success) {
+    alert('Đã gửi lại mã OTP vào email của bạn.')
+  } else {
+    errorMsg.value = result.message || 'Lỗi khi gửi lại OTP.'
+  }
 }
 </script>
 
@@ -110,6 +131,11 @@ const resendOTP = () => {
                     @keydown="handleKeyDown(index, $event)"
                 />
                 </div>
+                
+                <p v-if="errorMsg" class="text-xs text-red-500 font-medium flex items-center justify-center gap-1 mt-2">
+                  <span class="material-symbols-outlined text-[14px]">error</span>
+                  {{ errorMsg }}
+                </p>
 
                 <!-- Timer and Resend -->
                 <div class="flex flex-col items-center space-y-6">

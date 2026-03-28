@@ -1,15 +1,19 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
+
 const password = ref('')
 const confirmPassword = ref('')
 const showPassword1 = ref(false)
 const showPassword2 = ref(false)
 const errorMsg = ref('')
+const isLoading = ref(false)
 
-const handleReset = () => {
+const handleReset = async () => {
   if (password.value !== confirmPassword.value) {
     errorMsg.value = 'Mật khẩu xác nhận không khớp!'
     return
@@ -20,10 +24,19 @@ const handleReset = () => {
     return
   }
 
-  console.log('Resetting password to:', password.value)
-  // Mock success and redirect to login
-  alert('Đổi mật khẩu thành công! Vui lòng đăng nhập lại.')
-  router.push('/login')
+  isLoading.value = true
+  errorMsg.value = ''
+
+  const result = await authStore.resetPassword(password.value)
+  
+  isLoading.value = false
+  
+  if (result.success) {
+    alert('Đổi mật khẩu thành công! Vui lòng đăng nhập lại.')
+    router.push('/login')
+  } else {
+    errorMsg.value = result.message || 'Không thể đặt lại mật khẩu.'
+  }
 }
 </script>
 
@@ -106,9 +119,16 @@ const handleReset = () => {
 
           <!-- Action Button -->
           <div class="pt-4">
-            <button class="w-full bg-primary hover:bg-primary-container text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-primary/20 transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2 group" type="submit">
-              <span>Lưu thay đổi</span>
-              <span class="material-symbols-outlined text-[20px] transition-transform group-hover:translate-x-1">arrow_forward</span>
+            <button 
+              class="w-full bg-primary hover:bg-primary-container text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-primary/20 transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed" 
+              type="submit"
+              :disabled="isLoading"
+            >
+              <span v-if="isLoading">Đang xử lý...</span>
+              <template v-else>
+                <span>Lưu thay đổi</span>
+                <span class="material-symbols-outlined text-[20px] transition-transform group-hover:translate-x-1">arrow_forward</span>
+              </template>
             </button>
           </div>
         </form>
