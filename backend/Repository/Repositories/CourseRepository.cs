@@ -69,6 +69,34 @@ namespace backend.Repository.Repositories
                 .OrderByDescending(k => k.XuatBanLuc)
                 .ToListAsync();
 
+        public async Task<List<KhoaHoc>> AdminSearchCoursesAsync(string? keyword, int? trangThai, Guid? instructorId)
+        {
+            var query = _context.KhoaHocs
+                .Include(k => k.GiangVien)
+                .Include(k => k.DanhMuc)
+                .Where(k => !k.DaXoa)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                var lowerKeyword = keyword.ToLower();
+                query = query.Where(k => k.TieuDe.ToLower().Contains(lowerKeyword) || (k.GiangVien.HoTen != null && k.GiangVien.HoTen.ToLower().Contains(lowerKeyword)));
+            }
+
+            if (trangThai.HasValue)
+            {
+                query = query.Where(k => k.TrangThai == trangThai.Value);
+            }
+
+            if (instructorId.HasValue)
+            {
+                query = query.Where(k => k.MaGiangVien == instructorId.Value);
+            }
+
+            return await query.OrderByDescending(k => k.NgayTao).ToListAsync();
+        }
+
+
         public async Task AddCourseAsync(KhoaHoc course)
         {
             _context.KhoaHocs.Add(course);
@@ -229,13 +257,21 @@ namespace backend.Repository.Repositories
         // ── Chương (Sections) ─────────────────────────────────────
 
         public async Task<Chuong?> GetSectionByIdAsync(int id) =>
-            await _context
-                .Chuongs.Include(c => c.KhoaHoc)
+            await _context.Chuongs
+                .Include(c => c.KhoaHoc)
                 .FirstOrDefaultAsync(c => c.MaChuong == id);
 
         public async Task<List<Chuong>> GetSectionsByCourseAsync(Guid courseId) =>
             await _context
                 .Chuongs.Where(c => c.MaKhoaHoc == courseId)
+                .OrderBy(c => c.ThuTu)
+                .ToListAsync();
+
+        public async Task<List<Chuong>> GetFullCurriculumTreeAsync(Guid courseId) =>
+            await _context.Chuongs
+                .Include(c => c.BaiGiangs)
+                    .ThenInclude(bg => bg.TaiNguyenSo)
+                .Where(c => c.MaKhoaHoc == courseId)
                 .OrderBy(c => c.ThuTu)
                 .ToListAsync();
 

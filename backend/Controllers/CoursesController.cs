@@ -55,6 +55,22 @@ namespace backend.Controllers
             return Ok(MapToResponse(course));
         }
 
+        // ── Admin/Kiểm duyệt viên tìm kiếm/quản lý chung ────────────
+
+        /// <summary>Admin lấy toàn bộ list khóa học với bộ lọc (không phân biệt sở hữu)</summary>
+        [Authorize(Roles = "Admin,CMO,Moderator")]
+        [HttpGet("admin/all")]
+        public async Task<IActionResult> AdminGetAllCourses(
+            [FromQuery] string? keyword,
+            [FromQuery] int? trangThai,
+            [FromQuery] Guid? instructorId
+        )
+        {
+            var courses = await _courseRepository.AdminSearchCoursesAsync(keyword, trangThai, instructorId);
+            var response = courses.Select(MapToListResponse);
+            return Ok(response);
+        }
+
         // ── Giảng viên quản lý khóa học của mình ──────────────────
 
         /// <summary>Giảng viên xem danh sách khóa học của mình</summary>
@@ -235,14 +251,33 @@ namespace backend.Controllers
         [HttpPost("{id}/approve")]
         public async Task<IActionResult> ApproveCourse(Guid id)
         {
-            var success = await _courseRepository.ApproveCourseAsync(id);
-            if (!success)
+            var course = await _courseRepository.GetCourseByIdAsync(id);
+            if (course == null || course.TrangThai != 1)
                 return BadRequest(
                     new
                     {
-                        message = "Không thể phê duyệt. Khóa học phải đang ở trạng thái Chờ duyệt.",
+                        message = "Không thể phê duyệt. Khóa học không tồn tại hoặc không ở trạng thái Chờ duyệt.",
                     }
                 );
+
+            var success = await _courseRepository.ApproveCourseAsync(id);
+            if (!success)
+                return BadRequest(new { message = "Lỗi hệ thống khi phê duyệt khóa học." });
+
+            if (course.GiangVien != null && !string.IsNullOrEmpty(course.GiangVien.Email))
+            {
+                var body = $@"
+                    <h3>Chúc mừng {course.GiangVien.HoTen}!</h3>
+                    <p>Khóa học <strong>{course.TieuDe}</strong> của bạn đã được kiểm duyệt đội ngũ AET Academy phê duyệt thành công.</p>
+                    <p>Khóa học hiện đã được xuất bản công khai trên hệ thống và sẵn sàng tiếp cận học viên mới.</p>";
+
+                await _emailService.SendEmailAsync(
+                    course.GiangVien.Email,
+                    "[AET Academy] Khóa học của bạn đã được phê duyệt",
+                    body
+                );
+            }
+
             return Ok(new { message = "Phê duyệt thành công. Khóa học đã được xuất bản." });
         }
 
@@ -256,14 +291,36 @@ namespace backend.Controllers
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
-            var success = await _courseRepository.RejectCourseAsync(id, request.GhiChuTuChoi);
-            if (!success)
+
+            var course = await _courseRepository.GetCourseByIdAsync(id);
+            if (course == null || course.TrangThai != 1)
                 return BadRequest(
                     new
                     {
-                        message = "Không thể từ chối. Khóa học phải đang ở trạng thái Chờ duyệt.",
+                        message = "Không thể từ chối. Khóa học không tồn tại hoặc không ở trạng thái Chờ duyệt.",
                     }
                 );
+
+            var success = await _courseRepository.RejectCourseAsync(id, request.GhiChuTuChoi);
+            if (!success)
+                return BadRequest(new { message = "Lỗi hệ thống khi từ chối khóa học." });
+
+            if (course.GiangVien != null && !string.IsNullOrEmpty(course.GiangVien.Email))
+            {
+                var body = $@"
+                    <h3>Thông báo hệ thống AET Academy</h3>
+                    <p>Chào {course.GiangVien.HoTen},</p>
+                    <p>Khóa học <strong>{course.TieuDe}</strong> của bạn đã được kiểm duyệt và hiện tại chưa đạt yêu cầu để xuất bản.</p>
+                    <p><strong>Lý do từ chối:</strong> {request.GhiChuTuChoi}</p>
+                    <p>Vui lòng cập nhật lại nội dung theo yêu cầu trên và gửi duyệt lại trong thời gian sớm nhất nhé.</p>";
+
+                await _emailService.SendEmailAsync(
+                    course.GiangVien.Email,
+                    "[AET Academy] Yêu cầu chỉnh sửa khóa học",
+                    body
+                );
+            }
+
             return Ok(new { message = "Đã từ chối và trả lại cho Giảng viên chỉnh sửa." });
         }
 

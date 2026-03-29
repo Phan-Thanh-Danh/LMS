@@ -15,6 +15,10 @@ namespace backend.Repository.Services
         Task<List<KhoaHoc>> GetCoursesByInstructorAsync(Guid instructorId);
         Task<List<KhoaHoc>> GetPendingCoursesAsync();
         Task<List<KhoaHoc>> GetPublishedCoursesAsync();
+        
+        // Dành cho Admin/Moderator tìm kiếm khóa học
+        Task<List<KhoaHoc>> AdminSearchCoursesAsync(string? keyword, int? trangThai, Guid? instructorId);
+
         Task AddCourseAsync(KhoaHoc course);
         Task UpdateCourseAsync(KhoaHoc course);
         Task<bool> DeleteCourseAsync(Guid id);
@@ -32,6 +36,7 @@ namespace backend.Repository.Services
         // ── Chương (Sections) ─────────────────────────────────────
         Task<Chuong?> GetSectionByIdAsync(int id);
         Task<List<Chuong>> GetSectionsByCourseAsync(Guid courseId);
+        Task<List<Chuong>> GetFullCurriculumTreeAsync(Guid courseId);
         Task AddSectionAsync(Chuong section);
         Task UpdateSectionAsync(Chuong section);
         Task<bool> DeleteSectionAsync(int id);

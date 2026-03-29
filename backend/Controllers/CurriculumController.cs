@@ -12,7 +12,7 @@ namespace backend.Controllers
 {
     [ApiController]
     [Route("api/v1/curriculum")]
-    [Authorize(Roles = "Instructor,Admin,CMO")]
+    [Authorize(Roles = "Instructor,Admin,CMO,Moderator")]
     public class CurriculumController : ControllerBase
     {
         private readonly ICourseRepository _courseRepository;
@@ -285,6 +285,58 @@ namespace backend.Controllers
             );
         }
 
+        // ── Admin/Kiểm duyệt ──────────────────────────────────────
+
+        /// <summary>Xem toàn bộ cây giáo trình (Chương -> Bài giảng -> Tài nguyên) một lần</summary>
+        [HttpGet("admin/courses/{courseId}/details")]
+        [Authorize(Roles = "Admin,CMO,Moderator")]
+        public async Task<IActionResult> GetCurriculumTree(Guid courseId)
+        {
+            var tree = await _courseRepository.GetFullCurriculumTreeAsync(courseId);
+
+            var response = tree.Select(section => new CurriculumSectionNode
+            {
+                MaChuong = section.MaChuong,
+                MaKhoaHoc = section.MaKhoaHoc,
+                TieuDe = section.TieuDe,
+                MoTa = section.MoTa,
+                ThuTu = section.ThuTu,
+                NgayTao = section.NgayTao,
+                BaiGiangs = section
+                    .BaiGiangs.Select(lecture => new CurriculumLectureNode
+                    {
+                        MaBaiGiang = lecture.MaBaiGiang,
+                        MaChuong = lecture.MaChuong,
+                        TieuDe = lecture.TieuDe,
+                        LoaiBaiGiang = lecture.LoaiBaiGiang,
+                        MoTa = lecture.MoTa,
+                        ThuTu = lecture.ThuTu,
+                        ThoiLuong = lecture.ThoiLuong,
+                        XemMienPhi = lecture.XemMienPhi,
+                        DangKhoa = lecture.DangKhoa,
+                        MaTaiNguyen = lecture.MaTaiNguyen,
+                        TrangThaiTaiNguyen = lecture.TaiNguyenSo?.TrangThai,
+                        NgayTao = lecture.NgayTao,
+                        TaiNguyenSo =
+                            lecture.TaiNguyenSo != null
+                                ? new MediaUploadResponse
+                                {
+                                    MaTaiNguyen = lecture.TaiNguyenSo.MaTaiNguyen,
+                                    TenTep = lecture.TaiNguyenSo.TenTep,
+                                    LoaiTep = lecture.TaiNguyenSo.LoaiTep,
+                                    DungLuongByte = lecture.TaiNguyenSo.DungLuongByte,
+                                    DuongDanLuuTru = lecture.TaiNguyenSo.DuongDanLuuTru,
+                                    TrangThai = lecture.TaiNguyenSo.TrangThai,
+                                    NgayTao = lecture.TaiNguyenSo.NgayTao,
+                                }
+                                : null,
+                    })
+                    .ToList(),
+            });
+
+            return Ok(response);
+        }
+
         // ── Helpers ───────────────────────────────────────────────
 
         private Guid? GetCurrentUserId()
@@ -295,7 +347,7 @@ namespace backend.Controllers
 
         private bool IsOwnerOrAdmin(KhoaHoc course)
         {
-            if (User.IsInRole("Admin") || User.IsInRole("CMO"))
+            if (User.IsInRole("Admin") || User.IsInRole("CMO") || User.IsInRole("Moderator"))
                 return true;
             var userId = GetCurrentUserId();
             return userId.HasValue && course.MaGiangVien == userId.Value;

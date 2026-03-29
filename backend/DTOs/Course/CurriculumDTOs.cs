@@ -67,6 +67,16 @@ namespace backend.DTOs.Course
         public DateTime NgayTao { get; set; }
     }
 
+    public class CurriculumLectureNode : LectureResponse
+    {
+        public MediaUploadResponse? TaiNguyenSo { get; set; }
+    }
+
+    public class CurriculumSectionNode : SectionResponse
+    {
+        public List<CurriculumLectureNode> BaiGiangs { get; set; } = new();
+    }
+
     // ── Media Upload ──────────────────────────────────────────────
 
     public class MediaUploadResponse
