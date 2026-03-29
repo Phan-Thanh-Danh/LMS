@@ -12,20 +12,27 @@ namespace backend.Models
 
         [Required]
         [MaxLength(500)]
-        public string TenTep { get; set; }
+        public string TenTep { get; set; } = string.Empty;
 
         [Required]
         [MaxLength(50)]
-        public string LoaiTep { get; set; }
+        public string LoaiTep { get; set; } = string.Empty;
 
         [Required]
         [MaxLength(100)]
-        public string KieuMIME { get; set; }
+        public string KieuMIME { get; set; } = string.Empty;
         public long DungLuongByte { get; set; }
 
         [Required]
         [MaxLength(1000)]
-        public string DuongDanLuuTru { get; set; }
+        public string DuongDanLuuTru { get; set; } = string.Empty;
+
+        [MaxLength(1000)]
+        public string? OriginalFilePath { get; set; }
+
+        [MaxLength(50)]
+        public string? AesKey { get; set; }
+
         public int? ThoiLuong { get; set; }
 
         [Required]
@@ -34,6 +41,6 @@ namespace backend.Models
         public DateTime NgayTao { get; set; } = DateTime.Now;
 
         [ForeignKey("TaiLenBoi")]
-        public virtual NguoiDung NguoiDung { get; set; }
+        public virtual NguoiDung? NguoiDung { get; set; }
     }
 }

@@ -69,10 +69,14 @@ namespace backend.Repository.Repositories
                 .OrderByDescending(k => k.XuatBanLuc)
                 .ToListAsync();
 
-        public async Task<List<KhoaHoc>> AdminSearchCoursesAsync(string? keyword, int? trangThai, Guid? instructorId)
+        public async Task<List<KhoaHoc>> AdminSearchCoursesAsync(
+            string? keyword,
+            int? trangThai,
+            Guid? instructorId
+        )
         {
-            var query = _context.KhoaHocs
-                .Include(k => k.GiangVien)
+            var query = _context
+                .KhoaHocs.Include(k => k.GiangVien)
                 .Include(k => k.DanhMuc)
                 .Where(k => !k.DaXoa)
                 .AsQueryable();
@@ -80,7 +84,13 @@ namespace backend.Repository.Repositories
             if (!string.IsNullOrWhiteSpace(keyword))
             {
                 var lowerKeyword = keyword.ToLower();
-                query = query.Where(k => k.TieuDe.ToLower().Contains(lowerKeyword) || (k.GiangVien.HoTen != null && k.GiangVien.HoTen.ToLower().Contains(lowerKeyword)));
+                query = query.Where(k =>
+                    k.TieuDe.ToLower().Contains(lowerKeyword)
+                    || (
+                        k.GiangVien.HoTen != null
+                        && k.GiangVien.HoTen.ToLower().Contains(lowerKeyword)
+                    )
+                );
             }
 
             if (trangThai.HasValue)
@@ -95,7 +105,6 @@ namespace backend.Repository.Repositories
 
             return await query.OrderByDescending(k => k.NgayTao).ToListAsync();
         }
-
 
         public async Task AddCourseAsync(KhoaHoc course)
         {
@@ -177,7 +186,8 @@ namespace backend.Repository.Repositories
         public async Task<bool> ToggleCourseStatusAsync(Guid courseId)
         {
             var course = await _context.KhoaHocs.FindAsync(courseId);
-            if (course == null) return false;
+            if (course == null)
+                return false;
 
             // Toggle between Draft (0) and Published (2) assuming simple toggle, or Unpublish
             if (course.TrangThai == 2)
@@ -200,21 +210,30 @@ namespace backend.Repository.Repositories
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var course = await _context.KhoaHocs
-                    .Include(c => c.Chuongs)
+                var course = await _context
+                    .KhoaHocs.Include(c => c.Chuongs)
                         .ThenInclude(ch => ch.BaiGiangs)
                             .ThenInclude(b => b.TaiNguyenSo)
                     .FirstOrDefaultAsync(c => c.MaKhoaHoc == courseId);
 
-                if (course == null) return false;
+                if (course == null)
+                    return false;
 
                 // Collect all files to delete
                 var filesToDelete = new List<string>();
-                
+
                 // Add course thumbnail to delete list if it's local
-                if (!string.IsNullOrEmpty(course.DuongDanAnhDaiDien) && !course.DuongDanAnhDaiDien.StartsWith("http"))
+                if (
+                    !string.IsNullOrEmpty(course.DuongDanAnhDaiDien)
+                    && !course.DuongDanAnhDaiDien.StartsWith("http")
+                )
                 {
-                    filesToDelete.Add(System.IO.Path.Combine(webRootPath, course.DuongDanAnhDaiDien.TrimStart('/')));
+                    filesToDelete.Add(
+                        System.IO.Path.Combine(
+                            webRootPath,
+                            course.DuongDanAnhDaiDien.TrimStart('/')
+                        )
+                    );
                 }
 
                 foreach (var chuong in course.Chuongs)
@@ -223,7 +242,10 @@ namespace backend.Repository.Repositories
                     {
                         if (baiGiang.TaiNguyenSo != null)
                         {
-                            var resourceFile = System.IO.Path.Combine(webRootPath, baiGiang.TaiNguyenSo.DuongDanLuuTru.TrimStart('/'));
+                            var resourceFile = System.IO.Path.Combine(
+                                webRootPath,
+                                baiGiang.TaiNguyenSo.DuongDanLuuTru.TrimStart('/')
+                            );
                             filesToDelete.Add(resourceFile);
                             _context.TaiNguyenSos.Remove(baiGiang.TaiNguyenSo);
                         }
@@ -233,7 +255,7 @@ namespace backend.Repository.Repositories
                 // Delete the course (cascading will delete Chuong and BaiGiang if configured, otherwise remove them explicitly)
                 _context.KhoaHocs.Remove(course);
                 await _context.SaveChangesAsync();
-                
+
                 await transaction.CommitAsync();
 
                 // Delete physical files after successful DB transaction
@@ -241,7 +263,13 @@ namespace backend.Repository.Repositories
                 {
                     if (System.IO.File.Exists(file))
                     {
-                        try { System.IO.File.Delete(file); } catch { /* Log error potentially */ }
+                        try
+                        {
+                            System.IO.File.Delete(file);
+                        }
+                        catch
+                        { /* Log error potentially */
+                        }
                     }
                 }
 
@@ -257,8 +285,8 @@ namespace backend.Repository.Repositories
         // ── Chương (Sections) ─────────────────────────────────────
 
         public async Task<Chuong?> GetSectionByIdAsync(int id) =>
-            await _context.Chuongs
-                .Include(c => c.KhoaHoc)
+            await _context
+                .Chuongs.Include(c => c.KhoaHoc)
                 .FirstOrDefaultAsync(c => c.MaChuong == id);
 
         public async Task<List<Chuong>> GetSectionsByCourseAsync(Guid courseId) =>
@@ -268,8 +296,8 @@ namespace backend.Repository.Repositories
                 .ToListAsync();
 
         public async Task<List<Chuong>> GetFullCurriculumTreeAsync(Guid courseId) =>
-            await _context.Chuongs
-                .Include(c => c.BaiGiangs)
+            await _context
+                .Chuongs.Include(c => c.BaiGiangs)
                     .ThenInclude(bg => bg.TaiNguyenSo)
                 .Where(c => c.MaKhoaHoc == courseId)
                 .OrderBy(c => c.ThuTu)

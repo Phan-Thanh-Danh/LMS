@@ -177,7 +177,9 @@ namespace backend.Controllers
         [HttpPut("lectures/{id}")]
         public async Task<IActionResult> UpdateLecture(
             int id,
-            [FromBody] CreateLectureRequest request
+            [FromBody] CreateLectureRequest request,
+            [FromServices] IStorageService storageService,
+            [FromServices] IMediaRepository mediaRepository
         )
         {
             if (!ModelState.IsValid)
@@ -190,6 +192,29 @@ namespace backend.Controllers
             if (section == null || !IsOwnerOrAdmin(section.KhoaHoc))
                 return Forbid();
 
+            // Nếu giảng viên thay đổi File/Video, ta phải xóa file cũ đi để tiết kiệm Cloudflare R2
+            if (lecture.MaTaiNguyen != request.MaTaiNguyen)
+            {
+                if (lecture.MaTaiNguyen.HasValue && lecture.TaiNguyenSo != null)
+                {
+                    if (lecture.TaiNguyenSo.LoaiTep == "Video")
+                    {
+                        // Folder HLS
+                        await storageService.DeleteFolderAsync($"hls/{lecture.MaTaiNguyen.Value}/");
+                    }
+                    else if (!string.IsNullOrEmpty(lecture.TaiNguyenSo.DuongDanLuuTru))
+                    {
+                        // Document / PDF / Image
+                        await storageService.DeleteFileAsync(lecture.TaiNguyenSo.DuongDanLuuTru);
+                    }
+                    
+                    // Xóa metadata trong bảng TaiNguyenSo
+                    await mediaRepository.DeleteAssetAsync(lecture.MaTaiNguyen.Value);
+                }
+                
+                lecture.MaTaiNguyen = request.MaTaiNguyen;
+            }
+
             lecture.TieuDe = request.TieuDe;
             lecture.LoaiBaiGiang = request.LoaiBaiGiang;
             lecture.MoTa = request.MoTa;
@@ -201,7 +226,11 @@ namespace backend.Controllers
         }
 
         [HttpDelete("lectures/{id}")]
-        public async Task<IActionResult> DeleteLecture(int id)
+        public async Task<IActionResult> DeleteLecture(
+            int id,
+            [FromServices] IStorageService storageService,
+            [FromServices] IMediaRepository mediaRepository
+        )
         {
             var lecture = await _courseRepository.GetLectureByIdAsync(id);
             if (lecture == null)
@@ -211,7 +240,25 @@ namespace backend.Controllers
             if (section == null || !IsOwnerOrAdmin(section.KhoaHoc))
                 return Forbid();
 
+            var oldMediaId = lecture.MaTaiNguyen;
+            var oldMedia = lecture.TaiNguyenSo;
+
             await _courseRepository.DeleteLectureAsync(id);
+
+            // Tự dọn dẹp R2 Cloudflare khi xóa bài giảng
+            if (oldMediaId.HasValue && oldMedia != null)
+            {
+                if (oldMedia.LoaiTep == "Video")
+                {
+                    await storageService.DeleteFolderAsync($"hls/{oldMediaId.Value}/");
+                }
+                else if (!string.IsNullOrEmpty(oldMedia.DuongDanLuuTru))
+                {
+                    await storageService.DeleteFileAsync(oldMedia.DuongDanLuuTru);
+                }
+                await mediaRepository.DeleteAssetAsync(oldMediaId.Value);
+            }
+
             return Ok(new { message = "Đã xóa bài giảng thành công" });
         }
 

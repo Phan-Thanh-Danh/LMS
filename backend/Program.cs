@@ -56,7 +56,19 @@ builder.Services.AddScoped<
     backend.Repository.Services.ICourseRepository,
     backend.Repository.Repositories.CourseRepository
 >();
+
+builder.Services.AddSingleton<
+    backend.Repository.Services.IStorageService,
+    backend.Repository.Services.CloudflareR2Service
+>();
+
+builder.Services.AddScoped<
+    backend.Repository.Services.IMediaRepository,
+    backend.Repository.Repositories.MediaRepository
+>();
+
 builder.Services.AddHostedService<backend.Services.PromotionBackgroundService>();
+builder.Services.AddHostedService<backend.Services.VideoTranscoderService>();
 
 // Configure Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
@@ -134,6 +146,25 @@ app.MapGet(
         }
     )
     .WithName("GetWeatherForecast");
+
+// Dọn dẹp khi khởi động: Đánh dấu Failed các video bị kẹt ở Processing mà file gốc không còn
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<backend.Data.ApplicationDbContext>();
+    var stuckVideos = dbContext.TaiNguyenSos
+        .Where(a => a.TrangThai == "Processing" && a.LoaiTep == "Video")
+        .ToList();
+
+    foreach (var video in stuckVideos)
+    {
+        if (string.IsNullOrEmpty(video.OriginalFilePath) || !System.IO.File.Exists(video.OriginalFilePath))
+        {
+            video.TrangThai = "Failed";
+            Console.WriteLine($"[Startup Cleanup] Video {video.MaTaiNguyen} marked as Failed (original file missing).");
+        }
+    }
+    dbContext.SaveChanges();
+}
 
 app.Run();
 
