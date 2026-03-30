@@ -12,7 +12,7 @@ using backend.Data;
 namespace backend.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260321083323_InitialCreate")]
+    [Migration("20260330095710_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -480,6 +480,9 @@ namespace backend.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaDanhMuc"));
 
+                    b.Property<bool>("DaXoa")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("DangHienThi")
                         .HasColumnType("bit");
 
@@ -494,6 +497,9 @@ namespace backend.Migrations
 
                     b.Property<int?>("MaDanhMucCha")
                         .HasColumnType("int");
+
+                    b.Property<DateTime?>("NgayCapNhat")
+                        .HasColumnType("datetime2");
 
                     b.Property<DateTime>("NgayTao")
                         .HasColumnType("datetime2");
@@ -809,6 +815,9 @@ namespace backend.Migrations
                         .HasMaxLength(300)
                         .HasColumnType("nvarchar(300)");
 
+                    b.Property<string>("DanhSachMaTaiNguyenBangCap")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("DuongDanLinkedIn")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
@@ -820,8 +829,17 @@ namespace backend.Migrations
                     b.Property<DateTime?>("KyKetDieuKhoanLuc")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("LyDoTuChoi")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("MaSoThueMaHoa")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("MaTaiNguyenCCCDMatSau")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("MaTaiNguyenCCCDMatTruoc")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("NgayCapNhat")
                         .HasColumnType("datetime2");
@@ -1340,6 +1358,99 @@ namespace backend.Migrations
                     b.HasKey("MaNguoiDung");
 
                     b.ToTable("NguoiDungs");
+
+                    b.HasData(
+                        new
+                        {
+                            MaNguoiDung = new Guid("d4a7a8b4-8d4a-4b4a-8d4a-8d4a8d4a8d4a"),
+                            DaXoa = false,
+                            DangHoatDong = true,
+                            Email = "admin@aet.com",
+                            EmailDaXacThuc = true,
+                            HoTen = "Hệ thống Admin",
+                            LaNhanVien = true,
+                            MatKhauBam = "$2a$11$6jn6T0/Ibm2yNlyM.cRUI.6nkuUZ46OOxIV.m4ZjXdkhstcBgAX4u",
+                            MuoiMatKhau = "$2a$11$3dfJ1HCcvISVEAFCZr.Tz.",
+                            NgayTao = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                        },
+                        new
+                        {
+                            MaNguoiDung = new Guid("e5b8b9c5-9e5b-5c5b-9e5b-9e5b9e5b9e5b"),
+                            DaXoa = false,
+                            DangHoatDong = true,
+                            Email = "giangvien@aet.com",
+                            EmailDaXacThuc = true,
+                            HoTen = "Giảng viên Mẫu",
+                            LaNhanVien = false,
+                            MatKhauBam = "$2a$11$6jn6T0/Ibm2yNlyM.cRUI.6nkuUZ46OOxIV.m4ZjXdkhstcBgAX4u",
+                            MuoiMatKhau = "$2a$11$3dfJ1HCcvISVEAFCZr.Tz.",
+                            NgayTao = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                        },
+                        new
+                        {
+                            MaNguoiDung = new Guid("f6c9c0d6-0f6c-6d6c-0f6c-0f6c0f6c0f6c"),
+                            DaXoa = false,
+                            DangHoatDong = true,
+                            Email = "hocvien@aet.com",
+                            EmailDaXacThuc = true,
+                            HoTen = "Học viên Mẫu",
+                            LaNhanVien = false,
+                            MatKhauBam = "$2a$11$6jn6T0/Ibm2yNlyM.cRUI.6nkuUZ46OOxIV.m4ZjXdkhstcBgAX4u",
+                            MuoiMatKhau = "$2a$11$3dfJ1HCcvISVEAFCZr.Tz.",
+                            NgayTao = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                        },
+                        new
+                        {
+                            MaNguoiDung = new Guid("a1d2d3e4-1a2d-2e2d-1a2d-1a2d1a2d1a2d"),
+                            DaXoa = false,
+                            DangHoatDong = true,
+                            Email = "cfo@aet.com",
+                            EmailDaXacThuc = true,
+                            HoTen = "Giám đốc tài chính",
+                            LaNhanVien = true,
+                            MatKhauBam = "$2a$11$6jn6T0/Ibm2yNlyM.cRUI.6nkuUZ46OOxIV.m4ZjXdkhstcBgAX4u",
+                            MuoiMatKhau = "$2a$11$3dfJ1HCcvISVEAFCZr.Tz.",
+                            NgayTao = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                        },
+                        new
+                        {
+                            MaNguoiDung = new Guid("b2e3e4f5-2b3e-3f3e-2b3e-2b3e2b3e2b3e"),
+                            DaXoa = false,
+                            DangHoatDong = true,
+                            Email = "cmo@aet.com",
+                            EmailDaXacThuc = true,
+                            HoTen = "Giám đốc Marketing",
+                            LaNhanVien = true,
+                            MatKhauBam = "$2a$11$6jn6T0/Ibm2yNlyM.cRUI.6nkuUZ46OOxIV.m4ZjXdkhstcBgAX4u",
+                            MuoiMatKhau = "$2a$11$3dfJ1HCcvISVEAFCZr.Tz.",
+                            NgayTao = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                        },
+                        new
+                        {
+                            MaNguoiDung = new Guid("c3f4f5a6-3c4f-4a4f-3c4f-3c4f3c4f3c4f"),
+                            DaXoa = false,
+                            DangHoatDong = true,
+                            Email = "kiemduyet@aet.com",
+                            EmailDaXacThuc = true,
+                            HoTen = "Kiểm duyệt viên",
+                            LaNhanVien = true,
+                            MatKhauBam = "$2a$11$6jn6T0/Ibm2yNlyM.cRUI.6nkuUZ46OOxIV.m4ZjXdkhstcBgAX4u",
+                            MuoiMatKhau = "$2a$11$3dfJ1HCcvISVEAFCZr.Tz.",
+                            NgayTao = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                        },
+                        new
+                        {
+                            MaNguoiDung = new Guid("d4a5a6b7-4d5a-5b5a-4d5a-4d5a4d5a4d5a"),
+                            DaXoa = false,
+                            DangHoatDong = true,
+                            Email = "cskh@aet.com",
+                            EmailDaXacThuc = true,
+                            HoTen = "Chăm sóc khách hàng",
+                            LaNhanVien = true,
+                            MatKhauBam = "$2a$11$6jn6T0/Ibm2yNlyM.cRUI.6nkuUZ46OOxIV.m4ZjXdkhstcBgAX4u",
+                            MuoiMatKhau = "$2a$11$3dfJ1HCcvISVEAFCZr.Tz.",
+                            NgayTao = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                        });
                 });
 
             modelBuilder.Entity("backend.Models.NhanKhoaHoc", b =>
@@ -1629,6 +1740,10 @@ namespace backend.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("AesKey")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<long>("DungLuongByte")
                         .HasColumnType("bigint");
 
@@ -1647,8 +1762,15 @@ namespace backend.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<DateTime?>("NgayCapNhat")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime>("NgayTao")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("OriginalFilePath")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<Guid>("TaiLenBoi")
                         .HasColumnType("uniqueidentifier");
@@ -1883,6 +2005,9 @@ namespace backend.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaVaiTro"));
 
+                    b.Property<bool>("DangHoatDong")
+                        .HasColumnType("bit");
+
                     b.Property<string>("MoTa")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
@@ -1903,6 +2028,7 @@ namespace backend.Migrations
                         new
                         {
                             MaVaiTro = 1,
+                            DangHoatDong = true,
                             MoTa = "Học viên – quyền truy cập khóa học đã mua",
                             NgayTao = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             TenVaiTro = "Student"
@@ -1910,6 +2036,7 @@ namespace backend.Migrations
                         new
                         {
                             MaVaiTro = 2,
+                            DangHoatDong = true,
                             MoTa = "Giảng viên – quyền tạo và quản lý khóa học",
                             NgayTao = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             TenVaiTro = "Instructor"
@@ -1917,6 +2044,7 @@ namespace backend.Migrations
                         new
                         {
                             MaVaiTro = 3,
+                            DangHoatDong = true,
                             MoTa = "Quản trị viên – toàn quyền hệ thống",
                             NgayTao = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             TenVaiTro = "Admin"
@@ -1924,6 +2052,7 @@ namespace backend.Migrations
                         new
                         {
                             MaVaiTro = 4,
+                            DangHoatDong = true,
                             MoTa = "Giám đốc tài chính – duyệt rút tiền và hoàn tiền",
                             NgayTao = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             TenVaiTro = "CFO"
@@ -1931,6 +2060,7 @@ namespace backend.Migrations
                         new
                         {
                             MaVaiTro = 5,
+                            DangHoatDong = true,
                             MoTa = "Giám đốc marketing – quản lý chiến dịch",
                             NgayTao = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             TenVaiTro = "CMO"
@@ -1938,6 +2068,7 @@ namespace backend.Migrations
                         new
                         {
                             MaVaiTro = 6,
+                            DangHoatDong = true,
                             MoTa = "Kiểm duyệt viên – duyệt nội dung khóa học",
                             NgayTao = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             TenVaiTro = "Moderator"
@@ -1945,6 +2076,7 @@ namespace backend.Migrations
                         new
                         {
                             MaVaiTro = 7,
+                            DangHoatDong = true,
                             MoTa = "Nhân viên hỗ trợ khách hàng",
                             NgayTao = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             TenVaiTro = "CS"
@@ -1978,6 +2110,57 @@ namespace backend.Migrations
                     b.HasIndex("MaVaiTro");
 
                     b.ToTable("VaiTroNguoiDungs");
+
+                    b.HasData(
+                        new
+                        {
+                            MaVaiTroNguoiDung = 1,
+                            MaNguoiDung = new Guid("d4a7a8b4-8d4a-4b4a-8d4a-8d4a8d4a8d4a"),
+                            MaVaiTro = 3,
+                            NgayGanVaiTro = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                        },
+                        new
+                        {
+                            MaVaiTroNguoiDung = 2,
+                            MaNguoiDung = new Guid("e5b8b9c5-9e5b-5c5b-9e5b-9e5b9e5b9e5b"),
+                            MaVaiTro = 2,
+                            NgayGanVaiTro = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                        },
+                        new
+                        {
+                            MaVaiTroNguoiDung = 3,
+                            MaNguoiDung = new Guid("f6c9c0d6-0f6c-6d6c-0f6c-0f6c0f6c0f6c"),
+                            MaVaiTro = 1,
+                            NgayGanVaiTro = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                        },
+                        new
+                        {
+                            MaVaiTroNguoiDung = 4,
+                            MaNguoiDung = new Guid("a1d2d3e4-1a2d-2e2d-1a2d-1a2d1a2d1a2d"),
+                            MaVaiTro = 4,
+                            NgayGanVaiTro = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                        },
+                        new
+                        {
+                            MaVaiTroNguoiDung = 5,
+                            MaNguoiDung = new Guid("b2e3e4f5-2b3e-3f3e-2b3e-2b3e2b3e2b3e"),
+                            MaVaiTro = 5,
+                            NgayGanVaiTro = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                        },
+                        new
+                        {
+                            MaVaiTroNguoiDung = 6,
+                            MaNguoiDung = new Guid("c3f4f5a6-3c4f-4a4f-3c4f-3c4f3c4f3c4f"),
+                            MaVaiTro = 6,
+                            NgayGanVaiTro = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                        },
+                        new
+                        {
+                            MaVaiTroNguoiDung = 7,
+                            MaNguoiDung = new Guid("d4a5a6b7-4d5a-5b5a-4d5a-4d5a4d5a4d5a"),
+                            MaVaiTro = 7,
+                            NgayGanVaiTro = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                        });
                 });
 
             modelBuilder.Entity("backend.Models.YeuCauRutTien", b =>
@@ -2027,7 +2210,7 @@ namespace backend.Migrations
             modelBuilder.Entity("backend.Models.BaiGiang", b =>
                 {
                     b.HasOne("backend.Models.Chuong", "Chuong")
-                        .WithMany()
+                        .WithMany("BaiGiangs")
                         .HasForeignKey("MaChuong")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -2145,7 +2328,7 @@ namespace backend.Migrations
             modelBuilder.Entity("backend.Models.Chuong", b =>
                 {
                     b.HasOne("backend.Models.KhoaHoc", "KhoaHoc")
-                        .WithMany()
+                        .WithMany("Chuongs")
                         .HasForeignKey("MaKhoaHoc")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -2710,6 +2893,16 @@ namespace backend.Migrations
                     b.Navigation("GiangVien");
 
                     b.Navigation("NguoiDuyet");
+                });
+
+            modelBuilder.Entity("backend.Models.Chuong", b =>
+                {
+                    b.Navigation("BaiGiangs");
+                });
+
+            modelBuilder.Entity("backend.Models.KhoaHoc", b =>
+                {
+                    b.Navigation("Chuongs");
                 });
 #pragma warning restore 612, 618
         }

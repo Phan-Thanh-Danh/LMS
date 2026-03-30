@@ -41,7 +41,9 @@ namespace backend.Migrations
                     ThuTuHienThi = table.Column<int>(type: "int", nullable: false),
                     DangHienThi = table.Column<bool>(type: "bit", nullable: false),
                     DuongDanIcon = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    NgayTao = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    NgayTao = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    NgayCapNhat = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    DaXoa = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -139,6 +141,7 @@ namespace backend.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     TenVaiTro = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     MoTa = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    DangHoatDong = table.Column<bool>(type: "bit", nullable: false),
                     NgayTao = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
@@ -230,6 +233,10 @@ namespace backend.Migrations
                     MaSoThueMaHoa = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     TyLeDoanhThu = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     TrangThaiKYC = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    MaTaiNguyenCCCDMatTruoc = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    MaTaiNguyenCCCDMatSau = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    DanhSachMaTaiNguyenBangCap = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    LyDoTuChoi = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     KyKetDieuKhoanLuc = table.Column<DateTime>(type: "datetime2", nullable: true),
                     NgayCapNhat = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
@@ -364,9 +371,12 @@ namespace backend.Migrations
                     KieuMIME = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     DungLuongByte = table.Column<long>(type: "bigint", nullable: false),
                     DuongDanLuuTru = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
+                    OriginalFilePath = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    AesKey = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     ThoiLuong = table.Column<int>(type: "int", nullable: true),
                     TrangThai = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    NgayTao = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    NgayTao = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    NgayCapNhat = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -1361,17 +1371,45 @@ namespace backend.Migrations
                 });
 
             migrationBuilder.InsertData(
-                table: "VaiTros",
-                columns: new[] { "MaVaiTro", "MoTa", "NgayTao", "TenVaiTro" },
+                table: "NguoiDungs",
+                columns: new[] { "MaNguoiDung", "DaXoa", "DangHoatDong", "DuongDanAnhDaiDien", "Email", "EmailDaXacThuc", "HoTen", "LaNhanVien", "LanDangNhapCuoi", "MatKhauBam", "MuoiMatKhau", "NgayCapNhat", "NgayTao", "TieuSu" },
                 values: new object[,]
                 {
-                    { 1, "Học viên – quyền truy cập khóa học đã mua", new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Student" },
-                    { 2, "Giảng viên – quyền tạo và quản lý khóa học", new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Instructor" },
-                    { 3, "Quản trị viên – toàn quyền hệ thống", new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Admin" },
-                    { 4, "Giám đốc tài chính – duyệt rút tiền và hoàn tiền", new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "CFO" },
-                    { 5, "Giám đốc marketing – quản lý chiến dịch", new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "CMO" },
-                    { 6, "Kiểm duyệt viên – duyệt nội dung khóa học", new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Moderator" },
-                    { 7, "Nhân viên hỗ trợ khách hàng", new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "CS" }
+                    { new Guid("a1d2d3e4-1a2d-2e2d-1a2d-1a2d1a2d1a2d"), false, true, null, "cfo@aet.com", true, "Giám đốc tài chính", true, null, "$2a$11$6jn6T0/Ibm2yNlyM.cRUI.6nkuUZ46OOxIV.m4ZjXdkhstcBgAX4u", "$2a$11$3dfJ1HCcvISVEAFCZr.Tz.", null, new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), null },
+                    { new Guid("b2e3e4f5-2b3e-3f3e-2b3e-2b3e2b3e2b3e"), false, true, null, "cmo@aet.com", true, "Giám đốc Marketing", true, null, "$2a$11$6jn6T0/Ibm2yNlyM.cRUI.6nkuUZ46OOxIV.m4ZjXdkhstcBgAX4u", "$2a$11$3dfJ1HCcvISVEAFCZr.Tz.", null, new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), null },
+                    { new Guid("c3f4f5a6-3c4f-4a4f-3c4f-3c4f3c4f3c4f"), false, true, null, "kiemduyet@aet.com", true, "Kiểm duyệt viên", true, null, "$2a$11$6jn6T0/Ibm2yNlyM.cRUI.6nkuUZ46OOxIV.m4ZjXdkhstcBgAX4u", "$2a$11$3dfJ1HCcvISVEAFCZr.Tz.", null, new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), null },
+                    { new Guid("d4a5a6b7-4d5a-5b5a-4d5a-4d5a4d5a4d5a"), false, true, null, "cskh@aet.com", true, "Chăm sóc khách hàng", true, null, "$2a$11$6jn6T0/Ibm2yNlyM.cRUI.6nkuUZ46OOxIV.m4ZjXdkhstcBgAX4u", "$2a$11$3dfJ1HCcvISVEAFCZr.Tz.", null, new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), null },
+                    { new Guid("d4a7a8b4-8d4a-4b4a-8d4a-8d4a8d4a8d4a"), false, true, null, "admin@aet.com", true, "Hệ thống Admin", true, null, "$2a$11$6jn6T0/Ibm2yNlyM.cRUI.6nkuUZ46OOxIV.m4ZjXdkhstcBgAX4u", "$2a$11$3dfJ1HCcvISVEAFCZr.Tz.", null, new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), null },
+                    { new Guid("e5b8b9c5-9e5b-5c5b-9e5b-9e5b9e5b9e5b"), false, true, null, "giangvien@aet.com", true, "Giảng viên Mẫu", false, null, "$2a$11$6jn6T0/Ibm2yNlyM.cRUI.6nkuUZ46OOxIV.m4ZjXdkhstcBgAX4u", "$2a$11$3dfJ1HCcvISVEAFCZr.Tz.", null, new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), null },
+                    { new Guid("f6c9c0d6-0f6c-6d6c-0f6c-0f6c0f6c0f6c"), false, true, null, "hocvien@aet.com", true, "Học viên Mẫu", false, null, "$2a$11$6jn6T0/Ibm2yNlyM.cRUI.6nkuUZ46OOxIV.m4ZjXdkhstcBgAX4u", "$2a$11$3dfJ1HCcvISVEAFCZr.Tz.", null, new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), null }
+                });
+
+            migrationBuilder.InsertData(
+                table: "VaiTros",
+                columns: new[] { "MaVaiTro", "DangHoatDong", "MoTa", "NgayTao", "TenVaiTro" },
+                values: new object[,]
+                {
+                    { 1, true, "Học viên – quyền truy cập khóa học đã mua", new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Student" },
+                    { 2, true, "Giảng viên – quyền tạo và quản lý khóa học", new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Instructor" },
+                    { 3, true, "Quản trị viên – toàn quyền hệ thống", new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Admin" },
+                    { 4, true, "Giám đốc tài chính – duyệt rút tiền và hoàn tiền", new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "CFO" },
+                    { 5, true, "Giám đốc marketing – quản lý chiến dịch", new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "CMO" },
+                    { 6, true, "Kiểm duyệt viên – duyệt nội dung khóa học", new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Moderator" },
+                    { 7, true, "Nhân viên hỗ trợ khách hàng", new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "CS" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "VaiTroNguoiDungs",
+                columns: new[] { "MaVaiTroNguoiDung", "GanBoi", "MaNguoiDung", "MaVaiTro", "NgayGanVaiTro" },
+                values: new object[,]
+                {
+                    { 1, null, new Guid("d4a7a8b4-8d4a-4b4a-8d4a-8d4a8d4a8d4a"), 3, new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified) },
+                    { 2, null, new Guid("e5b8b9c5-9e5b-5c5b-9e5b-9e5b9e5b9e5b"), 2, new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified) },
+                    { 3, null, new Guid("f6c9c0d6-0f6c-6d6c-0f6c-0f6c0f6c0f6c"), 1, new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified) },
+                    { 4, null, new Guid("a1d2d3e4-1a2d-2e2d-1a2d-1a2d1a2d1a2d"), 4, new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified) },
+                    { 5, null, new Guid("b2e3e4f5-2b3e-3f3e-2b3e-2b3e2b3e2b3e"), 5, new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified) },
+                    { 6, null, new Guid("c3f4f5a6-3c4f-4a4f-3c4f-3c4f3c4f3c4f"), 6, new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified) },
+                    { 7, null, new Guid("d4a5a6b7-4d5a-5b5a-4d5a-4d5a4d5a4d5a"), 7, new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified) }
                 });
 
             migrationBuilder.CreateIndex(

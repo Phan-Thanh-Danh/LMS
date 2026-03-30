@@ -15,16 +15,19 @@ namespace backend.Controllers
     public class CoursesController : ControllerBase
     {
         private readonly ICourseRepository _courseRepository;
+        private readonly IInstructorRepository _instructorRepository;
         private readonly IWebHostEnvironment _env;
         private readonly IEmailService _emailService;
 
         public CoursesController(
             ICourseRepository courseRepository,
+            IInstructorRepository instructorRepository,
             IWebHostEnvironment env,
             IEmailService emailService
         )
         {
             _courseRepository = courseRepository;
+            _instructorRepository = instructorRepository;
             _env = env;
             _emailService = emailService;
         }
@@ -100,6 +103,10 @@ namespace backend.Controllers
             if (userId == null)
                 return Unauthorized();
 
+            // KIỂM TRA KYC
+            var kycPass = await CheckKycApproved(userId.Value);
+            if (!kycPass) return ForbidKyc();
+
             var slug = GenerateSlug(request.TieuDe);
             if (!await _courseRepository.IsSlugUniqueAsync(slug))
                 slug = $"{slug}-{Guid.NewGuid().ToString("N").Substring(0, 8)}";
@@ -148,6 +155,10 @@ namespace backend.Controllers
             if (course.MaGiangVien != userId)
                 return Forbid();
 
+            // KIỂM TRA KYC
+            var kycPass = await CheckKycApproved(userId.Value);
+            if (!kycPass) return ForbidKyc();
+
             // Chỉ cho sửa khi đang ở Draft hoặc Rejected
             if (course.TrangThai == 1 || course.TrangThai == 2)
                 return BadRequest(
@@ -192,6 +203,10 @@ namespace backend.Controllers
             var userId = GetCurrentUserId();
             if (course.MaGiangVien != userId)
                 return Forbid();
+
+            // KIỂM TRA KYC
+            var kycPass = await CheckKycApproved(userId.Value);
+            if (!kycPass) return ForbidKyc();
 
             if (course.TrangThai != 0 && course.TrangThai != 3)
                 return BadRequest(
@@ -464,6 +479,20 @@ namespace backend.Controllers
         {
             var claim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             return Guid.TryParse(claim, out var id) ? id : null;
+        }
+
+        private async Task<bool> CheckKycApproved(Guid instructorId)
+        {
+            var profile = await _instructorRepository.GetProfileAsync(instructorId);
+            return profile?.TrangThaiKYC == "Approved";
+        }
+
+        private IActionResult ForbidKyc()
+        {
+            return StatusCode(403, new { 
+                message = "Hồ sơ giảng viên của bạn chưa được phê duyệt (KYC). Vui lòng nộp đầy đủ hồ sơ pháp lý và chờ quản trị viên phê duyệt để sử dụng tính năng này.",
+                kycRequired = true
+            });
         }
 
         private static string GenerateSlug(string title)

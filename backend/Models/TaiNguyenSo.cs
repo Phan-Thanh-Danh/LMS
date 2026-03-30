@@ -39,6 +39,7 @@ namespace backend.Models
         [MaxLength(50)]
         public string TrangThai { get; set; } = "Pending";
         public DateTime NgayTao { get; set; } = DateTime.Now;
+        public DateTime? NgayCapNhat { get; set; }
 
         [ForeignKey("TaiLenBoi")]
         public virtual NguoiDung? NguoiDung { get; set; }

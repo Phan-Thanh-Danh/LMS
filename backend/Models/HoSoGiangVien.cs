@@ -25,6 +25,10 @@ namespace backend.Models
         [Required]
         [MaxLength(50)]
         public string TrangThaiKYC { get; set; } = "Pending";
+        public Guid? MaTaiNguyenCCCDMatTruoc { get; set; }
+        public Guid? MaTaiNguyenCCCDMatSau { get; set; }
+        public string? DanhSachMaTaiNguyenBangCap { get; set; }
+        public string? LyDoTuChoi { get; set; }
         public DateTime? KyKetDieuKhoanLuc { get; set; }
         public DateTime? NgayCapNhat { get; set; }
 

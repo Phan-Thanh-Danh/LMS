@@ -33,11 +33,15 @@ namespace backend.Services
                 try
                 {
                     using var scope = _serviceProvider.CreateScope();
-                    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                    var storageService = scope.ServiceProvider.GetRequiredService<IStorageService>();
+                    var dbContext =
+                        scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                    var storageService =
+                        scope.ServiceProvider.GetRequiredService<IStorageService>();
 
-                    var pendingAsset = await dbContext.TaiNguyenSos
-                        .Where(a => a.TrangThai == "Processing" && a.LoaiTep == "Video")
+                    var pendingAsset = await dbContext
+                        .TaiNguyenSos.Where(a =>
+                            a.TrangThai == "Processing" && a.LoaiTep == "Video"
+                        )
                         .FirstOrDefaultAsync(stoppingToken);
 
                     if (pendingAsset != null)
@@ -45,9 +49,14 @@ namespace backend.Services
                         var assetId = pendingAsset.MaTaiNguyen;
 
                         // Nếu file gốc không còn tồn tại -> đánh dấu Failed
-                        if (string.IsNullOrEmpty(pendingAsset.OriginalFilePath) || !File.Exists(pendingAsset.OriginalFilePath))
+                        if (
+                            string.IsNullOrEmpty(pendingAsset.OriginalFilePath)
+                            || !File.Exists(pendingAsset.OriginalFilePath)
+                        )
                         {
-                            _logger.LogWarning($"Original file not found for asset {assetId}. Marking as Failed.");
+                            _logger.LogWarning(
+                                $"Original file not found for asset {assetId}. Marking as Failed."
+                            );
                             pendingAsset.TrangThai = "Failed";
                             await dbContext.SaveChangesAsync(CancellationToken.None);
                             continue;
@@ -60,9 +69,19 @@ namespace backend.Services
                             var extension = Path.GetExtension(pendingAsset.OriginalFilePath); // e.g., .mp4
                             var fileKey = $"videos/{assetId}/video{extension}";
 
-                            using (var fs = new FileStream(pendingAsset.OriginalFilePath, FileMode.Open, FileAccess.Read))
+                            using (
+                                var fs = new FileStream(
+                                    pendingAsset.OriginalFilePath,
+                                    FileMode.Open,
+                                    FileAccess.Read
+                                )
+                            )
                             {
-                                await storageService.UploadFileAsync(fs, fileKey, pendingAsset.KieuMIME ?? "video/mp4");
+                                await storageService.UploadFileAsync(
+                                    fs,
+                                    fileKey,
+                                    pendingAsset.KieuMIME ?? "video/mp4"
+                                );
                             }
 
                             // Cleanup local temp file
@@ -78,6 +97,11 @@ namespace backend.Services
                         catch (Exception ex)
                         {
                             _logger.LogError(ex, $"Failed to upload video {assetId} to R2.");
+                            
+                            // Cleanup local temp file even on failure to prevent disk fill-up
+                            if (File.Exists(pendingAsset.OriginalFilePath))
+                                try { File.Delete(pendingAsset.OriginalFilePath); } catch { }
+                                
                             pendingAsset.TrangThai = "Failed";
                             await dbContext.SaveChangesAsync(CancellationToken.None);
                         }
@@ -96,8 +120,14 @@ namespace backend.Services
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Fatal Error in Video Upload Background Service.");
-                    try { await Task.Delay(15000, stoppingToken); }
-                    catch (OperationCanceledException) { return; }
+                    try
+                    {
+                        await Task.Delay(15000, stoppingToken);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        return;
+                    }
                 }
             }
         }
