@@ -185,11 +185,11 @@ const handleLogout = () => {
                 <div v-if="activeSubCategory" class="flex-1 bg-white py-6 px-8 overflow-y-auto">
                     <h3 class="text-sm font-bold text-gray-900 mb-4 uppercase tracking-wider">Chủ đề phổ biến</h3>
                     <div class="grid grid-cols-1 gap-1">
-                        <a v-for="topic in activeSubCategory.topics" :key="topic" 
-                           href="#" 
+                        <router-link v-for="topic in activeSubCategory.topics" :key="topic" 
+                           :to="{ path: '/explore', query: { category: topic } }" 
                            class="text-sm text-on-surface-variant hover:text-primary py-2 transition-colors">
                             {{ topic }}
-                        </a>
+                        </router-link>
                     </div>
                 </div>
             </div>
@@ -200,51 +200,50 @@ const handleLogout = () => {
           <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant text-xl">search</span>
           <input class="w-full bg-surface-container-low border-none rounded-full py-3 pl-12 pr-4 text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none" placeholder="Tìm kiếm bất cứ thứ gì" type="text"/>
         </div>
-        <!-- Navigation Links -->
-        <nav class="hidden xl:flex items-center gap-6 text-sm font-medium">
-          <a class="hover:text-primary transition-colors" href="#">Chứng chỉ</a>
-          <a class="hover:text-primary transition-colors" href="#">AET Business</a>
-          <a class="hover:text-primary transition-colors" href="#">Giảng dạy</a>
-          <router-link class="hover:text-primary transition-colors" to="/learning" active-class="text-primary font-bold border-b-2 border-primary pb-1">Khóa học của tôi</router-link>
-        </nav>
+
         <!-- Action Icons & Avatar -->
-        <div class="flex items-center gap-5">
-          <button class="hover:text-primary transition-all active:scale-95"><span class="material-symbols-outlined">favorite</span></button>
-          <router-link to="/cart" class="hover:text-primary transition-all active:scale-95">
-            <span class="material-symbols-outlined font-bold text-[#003fb1]">shopping_cart</span>
-          </router-link>
-          <button class="relative hover:text-primary transition-all active:scale-95">
-            <span class="material-symbols-outlined">notifications</span>
-            <span class="absolute -top-1 -right-1 w-2 h-2 bg-error rounded-full"></span>
-          </button>
-          <div class="group relative">
-            <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-fixed cursor-pointer hover:ring-4 hover:ring-primary/10 transition-all bg-gray-100 flex items-center justify-center">
-              <img v-if="authStore.user?.avatar" alt="User Profile" class="w-full h-full object-cover" :src="authStore.user?.avatar"/>
-              <span v-else class="material-symbols-outlined text-gray-400">person</span>
-            </div>
-            <!-- Simple Dropdown -->
-            <div class="absolute right-0 top-full mt-2 w-48 bg-white border border-surface-container rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
-               <div class="p-4 border-b border-surface-container">
-                <router-link to="/profile" class="block hover:text-primary transition-colors">
-                  <p class="font-bold text-sm">{{ authStore.user?.name || 'User' }}</p>
-                  <p class="text-xs text-on-surface-variant">{{ authStore.user?.email || 'user@example.com' }}</p>
-                </router-link>
-            </div>
-            <router-link to="/profile" class="w-full text-left p-3 text-sm text-on-surface hover:bg-surface-container-low transition-colors block border-b border-surface-container">Hồ sơ cá nhân</router-link>
-            <button @click="handleLogout" class="w-full text-left p-3 text-sm text-error hover:bg-error/5 transition-colors">Đăng xuất</button>
+        <div class="flex items-center gap-6">
+          <router-link to="/certificates" class="hidden xl:block hover:text-primary transition-colors text-sm font-medium" active-class="text-primary font-bold border-b-2 border-primary pb-1">Chứng chỉ</router-link>
+          <router-link to="/learning" class="hidden xl:block hover:text-primary transition-colors text-sm font-medium" active-class="text-primary font-bold border-b-2 border-primary pb-1">Khóa học của tôi</router-link>
+          
+          <div class="flex items-center gap-5 ml-2">
+            <button class="hover:text-primary transition-all active:scale-95"><span class="material-symbols-outlined">favorite</span></button>
+            <router-link to="/cart" class="hover:text-primary transition-all active:scale-95">
+              <span class="material-symbols-outlined font-bold text-[#003fb1]">shopping_cart</span>
+            </router-link>
+            <router-link to="/notifications" class="relative hover:text-primary transition-all active:scale-95">
+              <span class="material-symbols-outlined">notifications</span>
+              <span class="absolute -top-1 -right-1 w-2 h-2 bg-error rounded-full"></span>
+            </router-link>
+            <div class="group relative">
+              <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-fixed cursor-pointer hover:ring-4 hover:ring-primary/10 transition-all bg-gray-100 flex items-center justify-center">
+                <img v-if="authStore.user?.avatar" alt="User Profile" class="w-full h-full object-cover" :src="authStore.user?.avatar"/>
+                <span v-else class="material-symbols-outlined text-gray-400">person</span>
+              </div>
+              <!-- Simple Dropdown -->
+              <div class="absolute right-0 top-full mt-2 w-48 bg-white border border-surface-container rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                <div class="p-4 border-b border-surface-container">
+                  <router-link to="/profile" class="block hover:text-primary transition-colors">
+                    <p class="font-bold text-sm">{{ authStore.user?.name || 'User' }}</p>
+                    <p class="text-xs text-on-surface-variant">{{ authStore.user?.email || 'user@example.com' }}</p>
+                  </router-link>
+                </div>
+                <router-link to="/profile" class="w-full text-left p-3 text-sm text-on-surface hover:bg-surface-container-low transition-colors block border-b border-surface-container">Hồ sơ cá nhân</router-link>
+                <button @click="handleLogout" class="w-full text-left p-3 text-sm text-error hover:bg-error/5 transition-colors">Đăng xuất</button>
+              </div>
             </div>
           </div>
         </div>
       </div>
       <!-- Sub-Navbar -->
       <div class="hidden md:flex items-center justify-center gap-12 py-3 border-t border-surface-container-high text-[13px] font-medium text-on-surface-variant bg-white">
-        <a class="hover:text-primary transition-colors" href="#">Phát triển</a>
-        <a class="hover:text-primary transition-colors" href="#">Kinh doanh</a>
-        <a class="hover:text-primary transition-colors" href="#">IT & Phần mềm</a>
-        <a class="hover:text-primary transition-colors" href="#">Thiết kế</a>
-        <a class="hover:text-primary transition-colors" href="#">Marketing</a>
-        <a class="hover:text-primary transition-colors" href="#">Sức khỏe & Thể hình</a>
-        <a class="hover:text-primary transition-colors" href="#">Âm nhạc</a>
+        <router-link :to="{ path: '/explore', query: { category: 'Phát triển' } }" class="hover:text-primary transition-colors">Phát triển</router-link>
+        <router-link :to="{ path: '/explore', query: { category: 'Kinh doanh' } }" class="hover:text-primary transition-colors">Kinh doanh</router-link>
+        <router-link :to="{ path: '/explore', query: { category: 'IT & Phần mềm' } }" class="hover:text-primary transition-colors">IT & Phần mềm</router-link>
+        <router-link :to="{ path: '/explore', query: { category: 'Thiết kế' } }" class="hover:text-primary transition-colors">Thiết kế</router-link>
+        <router-link :to="{ path: '/explore', query: { category: 'Marketing' } }" class="hover:text-primary transition-colors">Marketing</router-link>
+        <router-link :to="{ path: '/explore', query: { category: 'Sức khỏe & Thể hình' } }" class="hover:text-primary transition-colors">Sức khỏe & Thể hình</router-link>
+        <router-link :to="{ path: '/explore', query: { category: 'Âm nhạc' } }" class="hover:text-primary transition-colors">Âm nhạc</router-link>
       </div>
     </header>
 

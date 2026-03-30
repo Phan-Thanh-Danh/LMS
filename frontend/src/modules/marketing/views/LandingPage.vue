@@ -230,7 +230,7 @@ const courses = [
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           <!-- Course Card 1 -->
-          <div v-for="course in courses" :key="course.title" class="bg-white rounded-2xl overflow-hidden editorial-shadow hover:-translate-y-2 transition-transform duration-300">
+          <router-link to="/course/vcore-ai" v-for="course in courses" :key="course.title" class="bg-white rounded-2xl overflow-hidden editorial-shadow hover:-translate-y-2 transition-transform duration-300 block text-left">
             <div class="aspect-video relative overflow-hidden">
               <img class="w-full h-full object-cover" :src="course.image" :alt="course.title">
               <div v-if="course.tag" :class="['absolute px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-widest', course.tag === 'Best Seller' ? 'top-3 left-3 bg-white/90 backdrop-blur text-primary' : 'top-3 right-3 bg-tertiary text-white']">
@@ -255,7 +255,7 @@ const courses = [
                 <div class="text-xs text-on-surface-variant line-through">{{ course.oldPrice }}đ</div>
               </div>
             </div>
-          </div>
+          </router-link>
         </div>
         <div class="mt-16 text-center">
           <a class="inline-flex items-center gap-2 text-primary font-bold text-lg group" href="#">

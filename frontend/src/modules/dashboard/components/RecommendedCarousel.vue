@@ -15,7 +15,7 @@ defineProps({
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-      <div v-for="course in courses" :key="course.id" 
+      <router-link v-for="course in courses" :key="course.id" :to="`/course/${course.id || 'vcore-ai'}`"
         class="group bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 cursor-pointer flex flex-col">
         
         <div class="aspect-video relative overflow-hidden">
@@ -47,7 +47,7 @@ defineProps({
             </div>
           </div>
         </div>
-      </div>
+      </router-link>
     </div>
   </div>
 </template>

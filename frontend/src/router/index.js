@@ -97,6 +97,34 @@ const routes = [
       component: () => import('../modules/users/components/info.vue'),
       meta: { requiresAuth: true }
     },
+    {
+      path: '/course/:id',
+      name: 'CourseDetails',
+      component: () => import('../modules/courses/views/course_details.vue')
+    },
+    {
+      path: '/explore',
+      name: 'Explore',
+      component: () => import('../modules/courses/views/ExploreView.vue')
+    },
+    {
+      path: '/certificates',
+      name: 'Certificates',
+      component: () => import('../modules/certificates/views/certificate.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/certificate-details',
+      name: 'CertificateDetails',
+      component: () => import('../modules/certificates/views/certificate_details.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/notifications',
+      name: 'Notifications',
+      component: () => import('../modules/notification/views/notifications.vue'),
+      meta: { requiresAuth: true }
+    },
 ]
 
 const router = createRouter({
