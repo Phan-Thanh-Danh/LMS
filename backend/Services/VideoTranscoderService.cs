@@ -97,6 +97,11 @@ namespace backend.Services
                         catch (Exception ex)
                         {
                             _logger.LogError(ex, $"Failed to upload video {assetId} to R2.");
+                            
+                            // Cleanup local temp file even on failure to prevent disk fill-up
+                            if (File.Exists(pendingAsset.OriginalFilePath))
+                                try { File.Delete(pendingAsset.OriginalFilePath); } catch { }
+                                
                             pendingAsset.TrangThai = "Failed";
                             await dbContext.SaveChangesAsync(CancellationToken.None);
                         }

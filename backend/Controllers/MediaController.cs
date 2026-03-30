@@ -26,6 +26,70 @@ namespace backend.Controllers
             _env = env;
         }
 
+        [HttpPost("upload")]
+        public async Task<IActionResult> Upload(
+            IFormFileCollection files,
+            [FromServices] IStorageService storageService
+        )
+        {
+            if (files == null || files.Count == 0)
+                return BadRequest("No files uploaded.");
+
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!Guid.TryParse(userIdStr, out var userId))
+                return Unauthorized();
+
+            var results = new List<object>();
+
+            foreach (var file in files)
+            {
+                if (file.Length == 0) continue;
+
+                // 1. Tạo bản ghi tài nguyên trong DB
+                var assetId = Guid.NewGuid();
+                var fileExtension = Path.GetExtension(file.FileName);
+                var fileKey = file.ContentType.StartsWith("image/") 
+                    ? $"images/{assetId}{fileExtension}" 
+                    : $"documents/{assetId}{fileExtension}";
+
+                var asset = new TaiNguyenSo
+                {
+                    MaTaiNguyen = assetId,
+                    TaiLenBoi = userId,
+                    TenTep = file.FileName,
+                    LoaiTep = file.ContentType.StartsWith("image/") ? "Image" : "Document",
+                    KieuMIME = file.ContentType,
+                    DungLuongByte = file.Length,
+                    TrangThai = "Pending",
+                    DuongDanLuuTru = fileKey,
+                    NgayTao = DateTime.Now
+                };
+
+                await _mediaRepo.CreateAssetAsync(asset);
+
+                // 2. Upload trực tiếp lên Cloud R2
+                using (var stream = file.OpenReadStream())
+                {
+                    await storageService.UploadFileAsync(stream, fileKey, file.ContentType);
+                }
+
+                // 3. Cập nhật trạng thái Ready
+                asset.TrangThai = "Ready";
+                await _mediaRepo.UpdateAssetAsync(asset);
+
+                results.Add(new { 
+                    fileName = file.FileName,
+                    assetId = asset.MaTaiNguyen,
+                    url = storageService.GeneratePresignedUrl(fileKey, 60)
+                });
+            }
+
+            return Ok(new { 
+                message = $"Successfully uploaded {results.Count} files.", 
+                data = results
+            });
+        }
+
         [HttpPost("upload/init")]
         public async Task<IActionResult> InitUpload([FromBody] ChunkUploadInitDto model)
         {
@@ -267,15 +331,18 @@ namespace backend.Controllers
             if (asset.TaiLenBoi != userId)
                 return Forbid();
 
-            // Xóa file vật lý trên R2
-            if (!string.IsNullOrEmpty(asset.DuongDanLuuTru) || asset.LoaiTep == "Video")
+            // Xóa file vật lý trên R2 dựa trên đường dẫn lưu trữ thực tế
+            if (!string.IsNullOrEmpty(asset.DuongDanLuuTru))
             {
-                if (asset.LoaiTep == "Video")
+                // Nếu đường dẫn là thư mục (HLS), xóa cả thư mục
+                if (asset.DuongDanLuuTru.Contains("/hls/"))
                 {
-                    await storageService.DeleteFolderAsync($"hls/{assetId}/");
+                    var folderPath = asset.DuongDanLuuTru.Substring(0, asset.DuongDanLuuTru.LastIndexOf('/') + 1);
+                    await storageService.DeleteFolderAsync(folderPath);
                 }
                 else
                 {
+                    // Nếu là file đơn (MP4, PDF...), xóa file đó
                     await storageService.DeleteFileAsync(asset.DuongDanLuuTru);
                 }
             }
@@ -297,6 +364,59 @@ namespace backend.Controllers
             await _mediaRepo.DeleteAssetAsync(assetId);
 
             return Ok(new { message = "Đã xóa Tài nguyên số thành công" });
+        }
+
+        [HttpPut("{assetId}/replace")]
+        public async Task<IActionResult> ReplaceAsset(
+            Guid assetId,
+            [FromBody] ChunkUploadInitDto model,
+            [FromServices] IStorageService storageService
+        )
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!Guid.TryParse(userIdStr, out var userId))
+                return Unauthorized();
+
+            var asset = await _mediaRepo.GetAssetByIdAsync(assetId);
+            if (asset == null)
+                return NotFound("Asset not found.");
+
+            if (asset.TaiLenBoi != userId)
+                return Forbid();
+
+            // 1. Xóa file cũ trên Cloud để dọn dẹp dung lượng
+            if (!string.IsNullOrEmpty(asset.DuongDanLuuTru))
+            {
+                if (asset.DuongDanLuuTru.Contains("/hls/"))
+                {
+                    var folderPath = asset.DuongDanLuuTru.Substring(0, asset.DuongDanLuuTru.LastIndexOf('/') + 1);
+                    await storageService.DeleteFolderAsync(folderPath);
+                }
+                else
+                {
+                    await storageService.DeleteFileAsync(asset.DuongDanLuuTru);
+                }
+            }
+
+            // 2. Cập nhật thông tin mới và chuyển trạng thái về Pending
+            asset.TenTep = model.FileName;
+            asset.DungLuongByte = model.FileSize;
+            asset.KieuMIME = model.ContentType;
+            asset.LoaiTep = model.ContentType.StartsWith("video/") ? "Video"
+                            : model.ContentType.StartsWith("image/") ? "Image"
+                            : "Document";
+            asset.TrangThai = "Pending";
+            asset.DuongDanLuuTru = "";
+            asset.NgayCapNhat = DateTime.Now;
+
+            await _mediaRepo.UpdateAssetAsync(asset);
+
+            // 3. Chuẩn bị thư mục Temp cho phiên upload mới
+            var tempDir = Path.Combine(_env.ContentRootPath, "Temp", "Uploads", assetId.ToString());
+            if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
+            Directory.CreateDirectory(tempDir);
+
+            return Ok(new { message = "Thay thế tài nguyên thành công. Bạn có thể bắt đầu upload file mới.", assetId = asset.MaTaiNguyen });
         }
     }
 }

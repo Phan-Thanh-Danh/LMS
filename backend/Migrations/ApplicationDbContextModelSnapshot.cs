@@ -812,6 +812,9 @@ namespace backend.Migrations
                         .HasMaxLength(300)
                         .HasColumnType("nvarchar(300)");
 
+                    b.Property<string>("DanhSachMaTaiNguyenBangCap")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("DuongDanLinkedIn")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
@@ -823,8 +826,17 @@ namespace backend.Migrations
                     b.Property<DateTime?>("KyKetDieuKhoanLuc")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("LyDoTuChoi")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("MaSoThueMaHoa")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("MaTaiNguyenCCCDMatSau")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("MaTaiNguyenCCCDMatTruoc")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("NgayCapNhat")
                         .HasColumnType("datetime2");
@@ -1746,6 +1758,9 @@ namespace backend.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("NgayCapNhat")
+                        .HasColumnType("datetime2");
 
                     b.Property<DateTime>("NgayTao")
                         .HasColumnType("datetime2");

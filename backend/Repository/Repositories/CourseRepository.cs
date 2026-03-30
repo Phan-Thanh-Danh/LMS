@@ -13,10 +13,12 @@ namespace backend.Repository.Repositories
     public class CourseRepository : ICourseRepository
     {
         private readonly ApplicationDbContext _context;
+        private readonly IStorageService _storageService;
 
-        public CourseRepository(ApplicationDbContext context)
+        public CourseRepository(ApplicationDbContext context, IStorageService storageService)
         {
             _context = context;
+            _storageService = storageService;
         }
 
         // ── Khóa học ──────────────────────────────────────────────
@@ -242,34 +244,45 @@ namespace backend.Repository.Repositories
                     {
                         if (baiGiang.TaiNguyenSo != null)
                         {
-                            var resourceFile = System.IO.Path.Combine(
-                                webRootPath,
-                                baiGiang.TaiNguyenSo.DuongDanLuuTru.TrimStart('/')
-                            );
-                            filesToDelete.Add(resourceFile);
-                            _context.TaiNguyenSos.Remove(baiGiang.TaiNguyenSo);
+                            var asset = baiGiang.TaiNguyenSo;
+                            
+                            // 1. Dọn dẹp trên Cloud (R2)
+                            if (!string.IsNullOrEmpty(asset.DuongDanLuuTru))
+                            {
+                                if (asset.DuongDanLuuTru.Contains("/hls/"))
+                                {
+                                    var folderPath = asset.DuongDanLuuTru.Substring(0, asset.DuongDanLuuTru.LastIndexOf('/') + 1);
+                                    await _storageService.DeleteFolderAsync(folderPath);
+                                }
+                                else
+                                {
+                                    await _storageService.DeleteFileAsync(asset.DuongDanLuuTru);
+                                }
+                            }
+
+                            // 2. Dọn dẹp file rác trong Temp nếu có
+                            if (!string.IsNullOrEmpty(asset.OriginalFilePath) && System.IO.File.Exists(asset.OriginalFilePath))
+                            {
+                                try { System.IO.File.Delete(asset.OriginalFilePath); } catch { }
+                            }
+
+                            _context.TaiNguyenSos.Remove(asset);
                         }
                     }
                 }
 
-                // Delete the course (cascading will delete Chuong and BaiGiang if configured, otherwise remove them explicitly)
+                // Delete the course (cascading will delete Chuong and BaiGiang if configured)
                 _context.KhoaHocs.Remove(course);
                 await _context.SaveChangesAsync();
 
                 await transaction.CommitAsync();
 
-                // Delete physical files after successful DB transaction
+                // Dọn dẹp ảnh đại diện khóa học (Local)
                 foreach (var file in filesToDelete)
                 {
                     if (System.IO.File.Exists(file))
                     {
-                        try
-                        {
-                            System.IO.File.Delete(file);
-                        }
-                        catch
-                        { /* Log error potentially */
-                        }
+                        try { System.IO.File.Delete(file); } catch { }
                     }
                 }
 

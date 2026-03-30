@@ -67,6 +67,16 @@ builder.Services.AddScoped<
     backend.Repository.Repositories.MediaRepository
 >();
 
+builder.Services.AddScoped<
+    backend.Repository.Services.IInstructorRepository,
+    backend.Repository.Repositories.InstructorRepository
+>();
+
+builder.Services.AddScoped<
+    backend.Repository.Services.IModeratorRepository,
+    backend.Repository.Repositories.ModeratorRepository
+>();
+
 builder.Services.AddHostedService<backend.Services.PromotionBackgroundService>();
 builder.Services.AddHostedService<backend.Services.VideoTranscoderService>();
 

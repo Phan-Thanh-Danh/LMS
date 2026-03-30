@@ -233,6 +233,10 @@ namespace backend.Migrations
                     MaSoThueMaHoa = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     TyLeDoanhThu = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     TrangThaiKYC = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    MaTaiNguyenCCCDMatTruoc = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    MaTaiNguyenCCCDMatSau = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    DanhSachMaTaiNguyenBangCap = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    LyDoTuChoi = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     KyKetDieuKhoanLuc = table.Column<DateTime>(type: "datetime2", nullable: true),
                     NgayCapNhat = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
@@ -371,7 +375,8 @@ namespace backend.Migrations
                     AesKey = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     ThoiLuong = table.Column<int>(type: "int", nullable: true),
                     TrangThai = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    NgayTao = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    NgayTao = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    NgayCapNhat = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
                 {
