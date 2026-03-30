@@ -1,9 +1,11 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
+import { useCategoryStore } from '@/stores/category';
 import LayoutStudent from '@/layouts/LayoutStudent.vue';
 
 const route = useRoute();
+const categoryStore = useCategoryStore();
 const currentCategory = ref('');
 const displayedCourses = ref([]);
 
@@ -137,7 +139,10 @@ const filterCourses = () => {
     }
 };
 
-onMounted(() => {
+onMounted(async () => {
+    if (categoryStore.categories.length === 0) {
+        await categoryStore.fetchCategories();
+    }
     filterCourses();
 });
 

@@ -1,13 +1,18 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useCategoryStore } from '@/stores/category'
 import { useRouter } from 'vue-router'
 import api from '@/services/axios'
 
 const authStore = useAuthStore()
+const categoryStore = useCategoryStore()
 const router = useRouter()
 
 onMounted(async () => {
+  // Fetch categories for mega menu
+  categoryStore.fetchCategories()
+
   if (authStore.isAuthenticated) {
     try {
       const res = await api.get('/Auth/profile')
@@ -23,103 +28,17 @@ onMounted(async () => {
   }
 })
 
-// STU-07: Mega Menu State & Data
+// STU-07: Mega Menu State
 const isMenuOpen = ref(false)
 const activeCategory = ref(null)
 const activeSubCategory = ref(null)
 
-const categories = ref([
-    {
-        id: 1,
-        name: 'Phát triển',
-        icon: 'code',
-        subCategories: [
-            {
-                id: 11,
-                name: 'Phát triển Web',
-                topics: ['Vue.js', 'React', 'Angular', 'Node.js', 'PHP', 'JavaScript', 'HTML & CSS']
-            },
-            {
-                id: 12,
-                name: 'Khoa học Dữ liệu',
-                topics: ['Python', 'Machine Learning', 'Deep Learning', 'Data Analysis', 'Statistics', 'R']
-            },
-            {
-                id: 13,
-                name: 'Phát triển Di động',
-                topics: ['Google Flutter', 'Android Development', 'iOS Development', 'Swift', 'React Native', 'Kotlin']
-            },
-            {
-                id: 14,
-                name: 'Ngôn ngữ lập trình',
-                topics: ['Python', 'Java', 'C#', 'C++', 'Go', 'Rust', 'TypeScript']
-            }
-        ]
-    },
-    {
-        id: 2,
-        name: 'Kinh doanh',
-        icon: 'business',
-        subCategories: [
-            {
-                id: 21,
-                name: 'Quản trị công ty',
-                topics: ['Lãnh đạo', 'Quản lý dự án', 'Kỹ năng giao tiếp', 'Chế độ đãi ngộ', 'Chiến lược kinh doanh']
-            },
-            {
-                id: 22,
-                name: 'Tài chính',
-                topics: ['Đầu tư chứng khoán', 'Phân tích tài chính', 'Kế toán', 'Tiền điện tử', 'Tài chính cá nhân']
-            },
-            {
-                id: 23,
-                name: 'Kỹ năng mềm',
-                topics: ['Thuyết trình', 'Làm việc nhóm', 'Quản lý thời gian', 'Tư duy phản biện', 'Sáng tạo']
-            }
-        ]
-    },
-    {
-        id: 3,
-        name: 'IT & Phần mềm',
-        icon: 'terminal',
-        subCategories: [
-            {
-                id: 31,
-                name: 'Chứng chỉ IT',
-                topics: ['AWS Certified', 'CompTIA A+', 'Cisco CCNA', 'Google Cloud', 'Microsoft Azure']
-            },
-            {
-                id: 32,
-                name: 'An ninh mạng',
-                topics: ['Ethical Hacking', 'Network Security', 'CompTIA Security+', 'CISSP', 'Phòng chống mã độc']
-            }
-        ]
-    },
-    {
-        id: 4,
-        name: 'Thiết kế',
-        icon: 'palette',
-        subCategories: [
-            {
-                id: 41,
-                name: 'Thiết kế đồ họa',
-                topics: ['Photoshop', 'Illustrator', 'Canva', 'InDesign', 'Lý thuyết màu sắc']
-            },
-            {
-                id: 42,
-                name: 'Thiết kế UX/UI',
-                topics: ['Figma', 'User Experience Design', 'Mobile Design', 'Web Design', 'UI Prototyping']
-            }
-        ]
-    }
-])
-
 // Tự động set mục đầu tiên khi mở menu
 const handleMenuEnter = () => {
     isMenuOpen.value = true
-    if (!activeCategory.value) {
-        activeCategory.value = categories.value[0]
-        activeSubCategory.value = categories.value[0].subCategories[0]
+    if (!activeCategory.value && categoryStore.categories.length > 0) {
+        activeCategory.value = categoryStore.categories[0]
+        activeSubCategory.value = categoryStore.categories[0].subCategories?.[0]
     }
 }
 
@@ -158,8 +77,8 @@ const handleLogout = () => {
             <div v-if="isMenuOpen" class="absolute top-full -left-4 w-screen max-w-[1000px] bg-white shadow-2xl border border-surface-container flex h-[500px] z-100 animate-in fade-in slide-in-from-top-2 duration-200">
                 <!-- Column 1: Main Categories -->
                 <div class="w-64 bg-white border-r border-surface-container py-4 overflow-y-auto">
-                    <div v-for="cat in categories" :key="cat.id" 
-                         @mouseenter="activeCategory = cat; activeSubCategory = cat.subCategories[0]"
+                    <div v-for="cat in categoryStore.categories" :key="cat.id" 
+                         @mouseenter="activeCategory = cat; activeSubCategory = cat.subCategories?.[0]"
                          :class="['flex items-center justify-between px-4 py-3 cursor-pointer transition-colors', 
                                   activeCategory?.id === cat.id ? 'bg-surface-container-low text-primary font-bold' : 'text-on-surface hover:bg-surface-container-lowest']">
                         <div class="flex items-center gap-3 text-sm">
@@ -237,13 +156,11 @@ const handleLogout = () => {
       </div>
       <!-- Sub-Navbar -->
       <div class="hidden md:flex items-center justify-center gap-12 py-3 border-t border-surface-container-high text-[13px] font-medium text-on-surface-variant bg-white">
-        <router-link :to="{ path: '/explore', query: { category: 'Phát triển' } }" class="hover:text-primary transition-colors">Phát triển</router-link>
-        <router-link :to="{ path: '/explore', query: { category: 'Kinh doanh' } }" class="hover:text-primary transition-colors">Kinh doanh</router-link>
-        <router-link :to="{ path: '/explore', query: { category: 'IT & Phần mềm' } }" class="hover:text-primary transition-colors">IT & Phần mềm</router-link>
-        <router-link :to="{ path: '/explore', query: { category: 'Thiết kế' } }" class="hover:text-primary transition-colors">Thiết kế</router-link>
-        <router-link :to="{ path: '/explore', query: { category: 'Marketing' } }" class="hover:text-primary transition-colors">Marketing</router-link>
-        <router-link :to="{ path: '/explore', query: { category: 'Sức khỏe & Thể hình' } }" class="hover:text-primary transition-colors">Sức khỏe & Thể hình</router-link>
-        <router-link :to="{ path: '/explore', query: { category: 'Âm nhạc' } }" class="hover:text-primary transition-colors">Âm nhạc</router-link>
+        <router-link v-for="cat in categoryStore.categories.slice(0, 7)" :key="cat.id"
+           :to="{ path: '/explore', query: { category: cat.name } }" 
+           class="hover:text-primary transition-colors">
+           {{ cat.name }}
+        </router-link>
       </div>
     </header>
 
