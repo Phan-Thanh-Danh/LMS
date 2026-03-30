@@ -33,7 +33,7 @@ const selectLesson = (lesson) => {
             :class="['flex-1 py-3 px-2 text-sm font-bold border-b-2 transition-all whitespace-nowrap min-w-[80px]',
                      activeTab === tab ? 'text-primary border-primary' : 'text-on-surface-variant border-transparent hover:text-primary']">
             {{ tab }}
-        </button>
+        </button>////sinh viên
     </div>
 
     <!-- Lesson Tab -->
